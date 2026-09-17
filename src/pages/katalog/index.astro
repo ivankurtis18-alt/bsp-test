@@ -1,0 +1,236 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import meta from "../../../data/katalog.json";
+
+const mb = (meta.velicinaKB / 1024).toFixed(1).replace(".", ",");
+const datum = new Date(meta.napravljen).toLocaleDateString("sr-RS", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+
+const brojke = [
+  { vrednost: String(meta.strana), labela: "Strana" },
+  { vrednost: String(meta.proizvoda), labela: "Proizvoda" },
+  { vrednost: String(meta.kategorija), labela: "Kategorija" },
+  { vrednost: `${mb} MB`, labela: "Veličina" },
+];
+---
+
+<Layout
+  naslov="Katalog proizvoda u PDF-u"
+  opis={`Katalog BSP-a: ${meta.proizvoda} proizvoda u ${meta.kategorija} kategorija, sa tehničkim karakteristikama i dimenzijama. Pregled u pregledaču ili preuzimanje PDF-a za štampu.`}
+  aktivna="katalog"
+>
+  {/* ══════════════════════════ UVOD ══════════════════════════ */}
+  <section class="uvod">
+    <div class="shell" data-otkrij-grupa>
+      <p class="t-labela eyebrow" data-otkrij>Katalog</p>
+      <h1 class="t-display naslov" data-otkrij data-maska>
+        Ceo program<br />na jednom mestu.
+      </h1>
+
+      <div class="uvod-dno kol-3">
+        <p class="t-lead uvod-tekst" data-otkrij data-smer="mir">
+          Svih {meta.proizvoda} proizvoda sa tehničkim karakteristikama, dimenzijama i nosivošću.
+          Pripremljen za štampu na A4 formatu, sa pretraživim tekstom.
+        </p>
+
+        <div class="akcije" data-otkrij>
+          <a
+            href={meta.fajl}
+            class="btn btn-primary"
+            target="_blank"
+            rel="noopener"
+            data-radnja="pregled"
+          >
+            Pogledajte katalog
+            <svg class="strelica" width="16" height="10" viewBox="0 0 16 10" fill="none" aria-hidden="true">
+              <path d="M11 1L15 5L11 9M15 5H0" stroke="currentColor" stroke-width="1.4"></path>
+            </svg>
+          </a>
+
+          <a
+            href={meta.fajl}
+            class="btn btn-ghost"
+            download="BSP-katalog.pdf"
+            data-radnja="preuzimanje"
+          >
+            <svg width="14" height="15" viewBox="0 0 14 15" fill="none" aria-hidden="true">
+              <path
+                d="M7 1v9m0 0L3.5 6.5M7 10l3.5-3.5M1 13h12"
+                stroke="currentColor"
+                stroke-width="1.4"
+                stroke-linecap="round"
+                stroke-linejoin="round"></path>
+            </svg>
+            Preuzmite PDF
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* ══════════════════════════ BROJKE ══════════════════════════ */}
+  {/* Tamno poglavlje ove strane. Brojke su njen jedini pravi sadržaj —
+      33 strane, 2,9MB, 54 proizvoda — pa ton stoji na dokazu, ne na pozivu. */}
+  <section class="section-glasna poglavlje-tamno" aria-label="Katalog u brojkama">
+    <div class="shell">
+      <dl class="brojke" data-otkrij-grupa>
+        {
+          brojke.map((b) => (
+            <div class="brojka" data-otkrij>
+              <dd class="vrednost">{b.vrednost}</dd>
+              <dt class="t-labela labela">{b.labela}</dt>
+            </div>
+          ))
+        }
+      </dl>
+      <p class="t-labela-sm izdanje" data-otkrij>
+        Izdanje od {datum} <span aria-hidden="true">·</span> PDF, A4 uspravno
+      </p>
+    </div>
+  </section>
+
+  {/* ══════════════════════════ POZIV ══════════════════════════ */}
+  {/* Arhetip B — rečenica vodi. Isti CTA blok je stajao na četiri strane;
+      ovde je sveden na tvrdnju i radnju, bez posebnog lead pasusa. */}
+  <section class="section-uz poziv">
+    <div class="shell" data-otkrij-grupa>
+      <div class="poziv-unutra kol-2">
+      <h2 class="zaglavlje-recenica" data-otkrij data-maska>
+        Katalog je polazna tačka.
+        <span class="tiho">Dimenzije, funkcije i boje prilagođavamo zahtevu vaše ustanove.</span>
+      </h2>
+      <div class="poziv-desno" data-otkrij>
+        <div class="poziv-akcije">
+          <a href="/kontakt" class="btn btn-primary">
+            Zatražite ponudu
+            <svg class="strelica" width="16" height="10" viewBox="0 0 16 10" fill="none" aria-hidden="true">
+              <path d="M11 1L15 5L11 9M15 5H0" stroke="currentColor" stroke-width="1.4"></path>
+            </svg>
+          </a>
+          <a href="tel:+38113348844" class="t-mono poziv-tel">013 348844</a>
+        </div>
+      </div>
+    </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .uvod {
+    padding-top: clamp(7.5rem, 13vw, 11rem);
+    padding-bottom: clamp(1.5rem, 3vw, 2.5rem);
+  }
+
+  .eyebrow {
+    color: var(--color-siva);
+    margin-bottom: clamp(1.25rem, 2.5vw, 2rem);
+  }
+
+  .naslov {
+    margin-bottom: clamp(2rem, 4vw, 3rem);
+  }
+
+  .uvod-dno {
+    display: grid;
+    gap: 2rem;
+    padding-top: clamp(1.75rem, 3vw, 2.5rem);
+    border-top: 1px solid var(--color-ivica);
+  }
+
+  .uvod-tekst {
+    max-width: 50ch;
+  }
+
+  .akcije {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+  }
+
+  .brojke {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: clamp(1.5rem, 3vw, 2.5rem);
+    margin: 0;
+    padding-top: clamp(1.5rem, 3vw, 2rem);
+    border-top: 1px solid var(--color-ivica);
+  }
+
+  .brojka {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .vrednost {
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+    margin: 0;
+    font-size: clamp(1.75rem, 3.5vw, 2.75rem);
+    font-weight: 600;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .labela {
+    color: var(--color-siva);
+  }
+
+  .izdanje {
+    margin: clamp(1.5rem, 3vw, 2rem) 0 0;
+    color: var(--color-siva);
+  }
+
+  /* ───────────────── Poziv ───────────────── */
+  .poziv {
+    border-top: 1px solid var(--color-ivica);
+  }
+
+  .poziv-unutra {
+    display: grid;
+    gap: clamp(2rem, 4vw, 4rem);
+  }
+
+  .poziv-desno {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+    max-width: 44ch;
+  }
+
+  .poziv-akcije {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .poziv-tel {
+    color: var(--color-plava);
+  }
+
+  @media (min-width: 620px) {
+    /* Kolone po težini sadržaja — vidi početnu. */
+    .brojke {
+      grid-template-columns: 0.9fr 1fr 1.25fr 0.85fr;
+    }
+    .uvod-dno {
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 3rem;
+    }
+  }
+
+  @media (min-width: 1000px) {
+    .poziv-unutra {
+      grid-template-columns: 1.18fr 0.82fr;
+      align-items: start;
+    }
+  }
+</style>

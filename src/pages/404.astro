@@ -1,0 +1,140 @@
+---
+import Layout from "../layouts/Layout.astro";
+import katalog from "../../data/proizvodi.json";
+
+const { proizvodi, kategorije } = katalog;
+
+/**
+ * 404.
+ *
+ * Najveći deo pogrešnih adresa na ovom sajtu biće prekucana kataloška
+ * oznaka (`/proizvodi/961-5` je lako promašiti). Zato ova strana nije
+ * izvinjenje nego PONOVNA PRETRAGA: kaže šta je pošlo po zlu i odmah nudi
+ * ceo indeks kategorija kao izlaz.
+ *
+ * Koristi arhetip B (rečenica vodi) — strana nešto tvrdi, i to jednom.
+ * Broj „404" NAMERNO ne ide u display veličinu: to nije podatak kojim se
+ * treba hvaliti, a velika cifra bi se tukla sa istim potezom na `/o-nama`.
+ */
+const sekcije = kategorije
+  .map((k) => ({ ...k, broj: proizvodi.filter((p) => p.kategorija === k.slug).length }))
+  .filter((k) => k.broj > 0);
+---
+
+<Layout
+  naslov="Stranica nije pronađena"
+  opis="Tražena stranica ne postoji. Pogledajte ceo proizvodni program BSP-a po kategorijama."
+>
+  <section class="uvod">
+    <div class="shell" data-otkrij-grupa>
+      <p class="t-labela eyebrow istureno" data-otkrij>404</p>
+
+      <h1 class="zaglavlje-recenica greska-naslov" data-otkrij data-maska>
+        Ova stranica ne postoji.
+        <span class="tiho">Ako ste kucali kataloški broj, proverite oznaku — ili krenite od
+        kategorije.</span>
+      </h1>
+    </div>
+  </section>
+
+  <section class="section-uz" aria-labelledby="izlaz-naslov">
+    <div class="shell" data-otkrij-grupa>
+      <h2 class="t-labela zaglavlje-labela kol-2" id="izlaz-naslov" data-otkrij data-smer="x">
+        Proizvodni program
+      </h2>
+
+      <ul class="izlaz kol-2">
+        {
+          sekcije.map((k) => (
+            <li class="izlaz-stavka" data-otkrij data-smer="x">
+              <a href={`/proizvodi#${k.slug}`} class="izlaz-veza">
+                <span class="izlaz-naziv">{k.naziv}</span>
+                <span class="t-mono izlaz-broj">{String(k.broj).padStart(2, "0")}</span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+
+      <div class="izlaz-akcije kol-2" data-otkrij>
+        <a href="/proizvodi" class="btn btn-primary">
+          Ceo katalog
+          <svg class="strelica" width="16" height="10" viewBox="0 0 16 10" fill="none" aria-hidden="true">
+            <path d="M11 1L15 5L11 9M15 5H0" stroke="currentColor" stroke-width="1.4"></path>
+          </svg>
+        </a>
+        <a href="tel:+38113348844" class="t-mono izlaz-tel">013 348844</a>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .uvod {
+    padding-top: clamp(7.5rem, min(13vw, 17svh), 11rem);
+    padding-bottom: clamp(1.5rem, 3vw, 2.5rem);
+  }
+
+  .greska-naslov {
+    max-width: 26ch;
+  }
+
+  /* Indeks kategorija je lista, ne mreža kartica: ovde se BIRA, a ne
+     razgleda — mreža bi tražila slike i pretvorila grešku u još jednu
+     stranicu za pregledanje. */
+  /* `margin-block`, ne skraćenica: `margin: 0` gasi klasu polja (`.kol-2`) —
+     vidi CLAUDE.md, „Polje". */
+  .izlaz {
+    list-style: none;
+    margin-block: 0;
+    padding: 0;
+    border-top: 1px solid var(--color-ivica);
+  }
+
+  .izlaz-veza {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding-block: clamp(0.7rem, 1.4vw, 0.95rem);
+    border-bottom: 1px solid var(--color-ivica);
+    color: var(--color-celik);
+    text-decoration: none;
+    transition:
+      color 0.45s var(--ease-sala),
+      padding-inline-start 0.5s var(--ease-sala);
+  }
+
+  /* Red se pomeri udesno na hover — jedini pokret na strani, i pokazuje
+     smer u kom se ide. */
+  /* Tekst otkriva PLAVU — boju radnje. Zelena znači potvrdu, a ovde se
+     ništa ne potvrđuje, nego se ide dalje. */
+  .izlaz-veza:hover,
+  .izlaz-veza:focus-visible {
+    color: var(--color-plava);
+    padding-inline-start: 0.75rem;
+  }
+
+  .izlaz-naziv {
+    font-size: var(--text-h3);
+    font-weight: 500;
+    letter-spacing: -0.012em;
+  }
+
+  .izlaz-broj {
+    color: var(--color-siva);
+    flex: none;
+  }
+
+  .izlaz-akcije {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.5rem;
+    margin-top: clamp(2rem, 4vw, 3rem);
+  }
+
+  .izlaz-tel {
+    color: var(--color-plava);
+  }
+</style>

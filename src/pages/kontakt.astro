@@ -1,0 +1,735 @@
+---
+import Layout from "../layouts/Layout.astro";
+import katalog from "../../data/proizvodi.json";
+
+const { proizvodi, kategorije } = katalog;
+
+const grupisano = kategorije
+  .map((k) => ({
+    naziv: k.naziv,
+    stavke: proizvodi.filter((p) => p.kategorija === k.slug),
+  }))
+  .filter((g) => g.stavke.length);
+
+/**
+ * TODO: povezati slanje forme.
+ * Sajt je statičan, pa forma traži spoljni endpoint (Formspree, Web3Forms,
+ * Netlify Forms...). Dok je prazno, forma ne glumi uspeh — javlja korisniku
+ * da pozove telefonom.
+ */
+const ENDPOINT = "";
+
+const adresa = "Novoseljanski put 139A, 26000 Pančevo, Srbija";
+const mapaSrc = `https://www.google.com/maps?q=${encodeURIComponent(adresa)}&output=embed`;
+const mapaLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(adresa)}`;
+---
+
+<Layout
+  naslov="Kontakt — Novoseljanski put 139A, Pančevo"
+  opis="Kontaktirajte BSP — proizvodnja medicinske opreme. Novoseljanski put 139A, Pančevo. Telefon 013 348844, radnim danom 07:00—15:00."
+  aktivna="kontakt"
+>
+  {/* Ova strana ne otvara naslovom nego BROJEM. Telefon je primarni kanal
+      za upit (CLAUDE.md, 1 i „Zaglavlje"), pa je pošteno da bude i najveća
+      stvar na strani — a ne rečenica koja ga najavljuje. Ujedno je jedino
+      mesto gde mono ide u display veličini: broj se bira, ne čita. */}
+  <section class="uvod uvod-kontakt">
+    <div class="shell" data-otkrij-grupa>
+      <p class="t-labela eyebrow" data-otkrij>Kontakt</p>
+
+      <h1 class="naslov-tel" data-otkrij data-maska>
+        <a href="tel:+38113348844">013 348844</a>
+      </h1>
+
+      <div class="uvod-dno kol-2">
+        <p class="t-lead uvod-tekst" data-otkrij data-smer="mir">
+          Recite nam šta vam treba. Što preciznije opišete opremu — tip, dimenzije, funkcije,
+          količinu — to brže dobijate tačnu ponudu.
+        </p>
+        <p class="t-labela-sm uvod-vreme" data-otkrij data-smer="x">
+          Radnim danom 07–15 <span aria-hidden="true">·</span> vikendom ne radimo
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <div class="shell kontakt">
+    {/* ══════════════════════ PODACI ══════════════════════ */}
+    {/*
+      Kolona je svedena sa ČETIRI bloka na dva, i to brisanjem, ne dodavanjem.
+
+      Mereno na ovoj strani: telefon se pojavljivao 4×, radno vreme 3×
+      (uvod strane, ovaj blok, podnožje). Otkad uvod nosi broj u display
+      veličini, ponavljanje istog broja 80px niže u sitnom slogu ga samo
+      slabi. Oba bloka su izbrisana — podatak nije izgubljen, stoji u uvodu
+      i u podnožju.
+
+      Ostaje ADRESA kao nosilac kolone (jedini podatak koji strana nigde
+      drugde ne daje u punom obliku) i mapa ispod nje kao POTVRDA te adrese,
+      ne kao ravnopravna kolona.
+    */}
+    <aside class="podaci" data-otkrij-grupa>
+      <div class="podatak podatak-nosilac" data-otkrij data-smer="x">
+        <h2 class="t-labela podatak-naslov">Adresa</h2>
+        <address class="adresa-glavno">
+          Novoseljanski put&nbsp;139A<br />
+          <span class="adresa-mesto">26000 Pančevo</span>
+        </address>
+
+        <div class="mapa-ram">
+          <iframe
+            src={mapaSrc}
+            title="Mapa — Novoseljanski put 139A, Pančevo"
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </div>
+
+        <a href={mapaLink} class="t-labela-sm podatak-veza" target="_blank" rel="noopener">
+          Otvori u mapama
+        </a>
+      </div>
+
+      <div class="podatak" data-otkrij data-smer="x">
+        <h2 class="t-labela podatak-naslov">Firma</h2>
+        <p class="podatak-tekst">SZR BSP-MGM<br />Proizvodnja medicinske opreme</p>
+        <p class="podatak-tiho">ISO 13485 · ISO 9001 · ISO 14001</p>
+      </div>
+    </aside>
+
+  </div>
+
+  {/* ══════════════════════ FORMA ══════════════════════
+      Zeleni blok ide PREKO CELE ŠIRINE, ne kao uska kolona pored podataka.
+
+      Izmereno: najtamniji pojas ove strane bio je 0,67 pri rasponu od svega
+      0,25 — blok je bio premali da se na nivou ekrana uopšte registruje kao
+      tonalni događaj. Sada strana ima tri poglavlja umesto dva stupca:
+      broj (izjava) → adresa i mapa (činjenice) → forma (radnja). */}
+  <section class="forma-sekcija" aria-label="Upit">
+    <div class="shell forma-blok" data-otkrij-grupa>
+      <div class="forma-ploca">
+      <form class="forma" novalidate data-forma data-endpoint={ENDPOINT} action={ENDPOINT || undefined} method="post">
+        <div class="polje" data-otkrij>
+          <label for="ime">Ime i prezime <span class="obavezno" aria-hidden="true">*</span></label>
+          <input type="text" id="ime" name="ime" autocomplete="name" required aria-describedby="ime-greska" />
+          <p class="greska" id="ime-greska" data-greska hidden></p>
+        </div>
+
+        <div class="polje" data-otkrij>
+          <label for="ustanova">Ustanova</label>
+          <input type="text" id="ustanova" name="ustanova" autocomplete="organization" />
+          <p class="pomoc">Bolnica, dom zdravlja, ordinacija, distributer.</p>
+        </div>
+
+        <div class="par">
+          <div class="polje" data-otkrij>
+            <label for="email">E-pošta <span class="obavezno" aria-hidden="true">*</span></label>
+            <input type="email" id="email" name="email" autocomplete="email" required aria-describedby="email-greska" />
+            <p class="greska" id="email-greska" data-greska hidden></p>
+          </div>
+
+          <div class="polje" data-otkrij>
+            <label for="telefon">Telefon</label>
+            <input type="tel" id="telefon" name="telefon" autocomplete="tel" />
+          </div>
+        </div>
+
+        <div class="polje" data-otkrij>
+          <label for="proizvod">Proizvod od interesa</label>
+          <div class="izbor">
+            <select id="proizvod" name="proizvod">
+              <option value="">Nije određeno</option>
+              {
+                grupisano.map((g) => (
+                  <optgroup label={g.naziv}>
+                    {g.stavke.map((p) => (
+                      <option value={p.naziv}>{p.naziv}</option>
+                    ))}
+                  </optgroup>
+                ))
+              }
+            </select>
+            <svg width="12" height="8" viewBox="0 0 12 8" fill="none" aria-hidden="true">
+              <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.4"></path>
+            </svg>
+          </div>
+          <p class="pomoc">Ako tražite nešto van kataloga, opišite to u poruci.</p>
+        </div>
+
+        <div class="polje" data-otkrij>
+          <label for="poruka">Poruka <span class="obavezno" aria-hidden="true">*</span></label>
+          <textarea id="poruka" name="poruka" rows="6" required aria-describedby="poruka-greska"></textarea>
+          <p class="greska" id="poruka-greska" data-greska hidden></p>
+        </div>
+
+        <div class="podnozje-forme" data-otkrij>
+          <button type="submit" class="btn btn-primary">
+            Pošaljite upit
+            <svg class="strelica" width="16" height="10" viewBox="0 0 16 10" fill="none" aria-hidden="true">
+              <path d="M11 1L15 5L11 9M15 5H0" stroke="currentColor" stroke-width="1.4"></path>
+            </svg>
+          </button>
+          <p class="t-labela-sm napomena">Polja sa * su obavezna</p>
+        </div>
+
+        <p class="status" role="status" aria-live="polite" data-status hidden></p>
+      </form>
+      </div>
+    </div>
+  </section>
+
+</Layout>
+
+<style>
+  /* ── Otvaranje strane: broj ─────────────────────────────────────────── */
+  .uvod-kontakt {
+    padding-bottom: clamp(2rem, 4vw, 3.5rem);
+  }
+
+  /* Broj ide u DISPLAY pismo, ne u mono.
+
+     Mono je bio izbor zato što je telefon mašinski podatak — ali na 108px
+     JetBrains Mono pokazuje svoje poreklo: nula ima tačku u sredini i na toj
+     razmeri izgleda kao slovna greška, a tabularne cifre prave rupu između
+     „013" i „348844". Na 12px je to detalj, na 108px je kvar.
+
+     Pravilo „mono = mašinska vrednost" i dalje važi za sitan slog. Ovde je
+     broj IZJAVA, pa nosi pismo kojim sajt govori. */
+  .naslov-tel {
+    margin-block: clamp(0.75rem, 2vw, 1.25rem) clamp(1.75rem, 3.5vw, 2.75rem);
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+    font-size: clamp(2.5rem, 9vw, 7.5rem);
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.035em;
+  }
+
+  .naslov-tel a {
+    color: var(--color-celik);
+    text-decoration: none;
+    transition: color 0.5s var(--ease-sala);
+  }
+
+  .naslov-tel a:hover,
+  .naslov-tel a:focus-visible {
+    color: var(--color-plava);
+  }
+
+  .uvod-dno {
+    display: grid;
+    gap: clamp(1rem, 2.5vw, 2rem);
+    padding-top: clamp(1.25rem, 2.5vw, 2rem);
+    border-top: 1px solid var(--color-ivica);
+  }
+
+  .uvod-vreme {
+    margin: 0;
+  }
+
+  @media (min-width: 900px) {
+    .uvod-dno {
+      grid-template-columns: 1.6fr 1fr;
+      align-items: start;
+      gap: clamp(2rem, 5vw, 4rem);
+    }
+  }
+
+  .uvod {
+    padding-top: clamp(7.5rem, 13vw, 11rem);
+    padding-bottom: clamp(2.5rem, 5vw, 4rem);
+  }
+
+  .eyebrow {
+    color: var(--color-siva);
+    margin-bottom: clamp(1.25rem, 2.5vw, 2rem);
+  }
+
+  .naslov {
+    margin-bottom: clamp(1.75rem, 3vw, 2.5rem);
+  }
+
+  .red {
+    display: block;
+    overflow: hidden;
+    padding-bottom: 0.06em;
+  }
+
+  .red > span {
+    display: block;
+  }
+
+  .uvod-tekst {
+    max-width: 52ch;
+  }
+
+  /* ───────────────── Raspored ───────────────── */
+  .kontakt {
+    display: grid;
+    gap: clamp(2rem, 4vw, 3.5rem);
+    padding-bottom: clamp(3rem, 6vw, 5rem);
+  }
+
+  .podaci {
+    display: grid;
+    gap: 2rem;
+    align-content: start;
+  }
+
+  .podatak {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid var(--color-ivica);
+  }
+
+  .podatak-naslov {
+    color: var(--color-siva);
+    margin: 0 0 0.25rem;
+  }
+
+  .podatak-tekst {
+    margin: 0;
+    font-style: normal;
+    line-height: 1.55;
+  }
+
+  .podatak-tiho {
+    margin: 0;
+    color: var(--color-siva);
+    font-size: 0.8125rem;
+  }
+
+  /* `min-height` zbog WCAG 2.2 (2.5.8): izmereno 101×18px, minimum je 24.
+     `align-self: start` ostaje, pa se link i dalje ne rasteže po koloni. */
+  .podatak-veza {
+    color: var(--color-plava);
+    align-self: start;
+    margin-top: 0.2rem;
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+  }
+
+  /* ───────────────── Forma ───────────────── */
+  /* Zeleni blok zauzima prostor koji je ranije držala sama forma; forma je
+     uvučena i stoji na staklu. Staklo ima smisla samo ako iza njega ima šta
+     da se zamuti — otud dva radijalna prelaza u zelenom, jedan svetliji
+     gore levo, jedan tamniji dole desno. */
+  /* Zeleni blok je sada POJAS preko cele širine. Preliv se zadržava — na
+     ovoj površini ravna zelena bi bila plakat, a blagi prelaz je drži kao
+     prostor. */
+  .forma-sekcija {
+    background: linear-gradient(152deg, #2c6b5a 0%, #1d5044 52%, #327564 100%);
+    padding-block: clamp(3rem, 6vw, 5.5rem);
+  }
+
+  .forma-blok {
+    position: relative;
+    isolation: isolate;
+  }
+
+  /* ── PLOČA ────────────────────────────────────────────────────────────
+     Staklo je PROBANO I UKLONJENO. `backdrop-filter: blur(26px)` sa tri
+     svetlosne kugle iza bio je jedini element na sajtu koji pripada drugom
+     trendu i drugoj godini — sve ostalo je oštro, bez zaobljenja i bez
+     dekorativnih senki.
+
+     Zamenjeno onim što u ovom pravcu zaista radi: ČISTA BELA PLOČA uvučena
+     u zeleni blok. Kontrast bele na hirurškoj zelenoj je sam po sebi
+     efekat; staklo ga je zapravo ublažavalo.
+
+     Posledica koja se lako previdi: tekst na ploči više nije beo nego
+     čelično siv, a primarno dugme se vraća u PLAVU — na beloj podlozi više
+     ne važi izuzetak zbog kog je bilo izvrnuto u belo. */
+  /* Ploča je UŽA od pojasa. Kad je bila puna širina sadržaja, zeleno je
+     ostajalo kao okvir od par piksela i pojas se pri merenju cele strane
+     čitao na 0,65 — dakle jedva se registrovao. Uža ploča pušta zeleno da
+     bude polje, a ne ivica; forma uz to bolje čita u užoj meri. */
+  .forma-ploca {
+    position: relative;
+    max-width: 46rem;
+    margin-inline: auto;
+    padding: clamp(1.5rem, 4vw, 3rem);
+    background: var(--color-bela);
+  }
+
+  .forma-ploca :is(.polje label, .napomena) {
+    color: var(--color-celik);
+  }
+
+  .forma-ploca .pomoc {
+    color: var(--color-siva);
+  }
+
+  .forma-ploca .obavezno {
+    color: var(--color-zelena);
+  }
+
+  /* Polje je blago udubljeno u ploču: podloga „sala", ivica hairline. */
+  .forma-ploca .polje :is(input, textarea, select) {
+    background: var(--color-sala);
+    border-color: var(--color-ivica);
+  }
+
+  .forma-ploca .polje :is(input, textarea, select):hover {
+    border-color: var(--color-siva);
+  }
+
+  /* Mora u opsegu `.forma-ploca .polje`, inače ga opštije pravilo nadjača —
+     ima istu specifičnost a stoji ranije. Pre `:focus`, da fokusirano polje
+     i dalje pokaže plavi prsten. */
+  .forma-ploca .polje :is(input, textarea)[aria-invalid="true"] {
+    border-color: #8a5a0b;
+    box-shadow: inset 0 0 0 1px #8a5a0b;
+  }
+
+  .forma-ploca .polje :is(input, textarea, select):focus {
+    background: var(--color-bela);
+    border-color: var(--color-plava);
+    box-shadow: inset 0 0 0 1px var(--color-plava);
+  }
+
+  /* Ista specifičnost kao pravilo iznad, pa mora i ovde — inače bi ga
+     pravilo za ploču nadjačalo i na njoj bi prsten ostao tanak. */
+  .forma-ploca .polje :is(input, textarea, select):focus-visible {
+    outline: 2px solid var(--color-plava);
+    outline-offset: 2px;
+  }
+
+  /* Upozorenje ostaje jantarno, ne crveno — ali u tamnijoj nijansi, jer se
+     sada čita na BELOJ ploči, a ne na tamnozelenoj pločici. Svetli jantar
+     #F0B357 na beloj daje 1,9:1 i pao bi. */
+  .forma-ploca .greska {
+    align-self: start;
+    color: #8a5a0b;
+    font-size: 0.75rem;
+    letter-spacing: 0.01em;
+  }
+
+  .forma-ploca .status {
+    background: var(--color-sala);
+    border-color: var(--color-ivica);
+    color: var(--color-celik);
+  }
+
+  .forma {
+    display: flex;
+    flex-direction: column;
+    gap: 1.4rem;
+  }
+
+  .polje {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .polje label {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-siva);
+  }
+
+  .obavezno {
+    color: var(--color-plava);
+  }
+
+  .polje input,
+  .polje textarea,
+  .polje select {
+    width: 100%;
+    font-family: inherit;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--color-celik);
+    background: var(--color-sala);
+    border: 1px solid var(--color-ivica);
+    border-radius: 0;
+    padding: 0.8rem 0.9rem;
+    min-height: 48px;
+    transition:
+      border-color 0.25s var(--ease-sala),
+      background-color 0.25s var(--ease-sala);
+  }
+
+  .polje textarea {
+    resize: vertical;
+    min-height: 140px;
+  }
+
+  .polje input:hover,
+  .polje textarea:hover,
+  .polje select:hover {
+    border-color: var(--color-siva);
+  }
+
+  /* FOKUS JE ISTE DEBLJINE KAO SVUDA NA SAJTU.
+
+     Veze i dugmad dobijaju `outline: 2px` sa odmakom od 3px. Polja su
+     ranije imala samo `box-shadow: inset 0 0 0 1px` — upola tanji prsten,
+     i to UNUTAR polja koje ionako ima ivicu, pa se na svetlom ekranu lako
+     previdi. Boja prolazi (plava na beloj 4,9:1), ali debljina ne prati
+     ostatak sajta.
+
+     `:focus-visible`, ne `:focus`: klik mišem ne treba da crta prsten,
+     tastatura treba. Promena ivice i podloge ostaje za oba. */
+  .polje input:focus,
+  .polje textarea:focus,
+  .polje select:focus {
+    outline: none;
+    border-color: var(--color-plava);
+    background: var(--color-bela);
+    box-shadow: inset 0 0 0 1px var(--color-plava);
+  }
+
+  .polje input:focus-visible,
+  .polje textarea:focus-visible,
+  .polje select:focus-visible {
+    outline: 2px solid var(--color-plava);
+    outline-offset: 2px;
+  }
+
+  .polje input[aria-invalid="true"],
+  .polje textarea[aria-invalid="true"] {
+    border-color: #b7791f;
+    box-shadow: inset 0 0 0 1px #b7791f;
+  }
+
+  .izbor {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .izbor select {
+    appearance: none;
+    padding-right: 2.5rem;
+  }
+
+  .izbor svg {
+    position: absolute;
+    right: 1rem;
+    pointer-events: none;
+    color: var(--color-siva);
+  }
+
+  .pomoc {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--color-siva);
+  }
+
+  .greska {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: #b3261e;
+  }
+
+  .par {
+    display: grid;
+    gap: 1.5rem;
+  }
+
+  .podnozje-forme {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.25rem;
+    padding-top: 0.5rem;
+  }
+
+  .napomena {
+    color: var(--color-siva);
+  }
+
+  .status {
+    margin: 0;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--color-ivica);
+    background: var(--color-sala);
+    font-size: 1.0625rem;
+    line-height: 1.5;
+  }
+
+  .status[data-vrsta="greska"] {
+    border-color: #b3261e;
+    color: #8c1d18;
+  }
+
+  .status[data-vrsta="uspeh"] {
+    border-color: var(--color-plava);
+    color: var(--color-plava);
+  }
+
+  /* ───────────────── Mapa ───────────────── */
+  /* Stoji uz samu adresu, u širini kolone. Bez sivog filtera — mapa u boji
+     se brže čita jer su putevi, zelenilo i voda odvojeni bojom. */
+  /* Adresa nosi kolonu: jedina je veličina u njoj koja odstupa od telesnog
+     sloga, pa oko ima gde da stane. Ostaje ispod naslovne veličine uvoda —
+     dve display vrednosti na istoj strani bi se tukle. */
+  .adresa-glavno {
+    font-size: var(--text-h3);
+    font-weight: 500;
+    line-height: 1.22;
+    letter-spacing: -0.015em;
+    font-style: normal;
+    color: var(--color-celik);
+  }
+
+  .adresa-mesto {
+    color: var(--color-siva);
+  }
+
+  .podatak-nosilac {
+    gap: 0.75rem;
+    border-top-color: var(--color-celik);
+  }
+
+  .mapa-ram {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    margin-top: 0.35rem;
+    border: 1px solid var(--color-ivica);
+    background: var(--color-bela);
+    overflow: hidden;
+  }
+
+  .mapa-ram iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+  }
+
+  /* ───────────────── Breakpointi ───────────────── */
+  @media (min-width: 620px) {
+    .par {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  @media (min-width: 1000px) {
+    /* Forma je izašla iz ovog reda u sopstveni pojas, pa ovde ostaju samo
+       podaci: adresa sa mapom levo, firma desno. Nejednake kolone —
+       adresa nosi i mapu. */
+    .kontakt {
+      grid-template-columns: 1.25fr 0.75fr;
+      gap: clamp(3rem, 6vw, 6rem);
+      align-items: start;
+    }
+
+    .podaci {
+      display: contents;
+    }
+  }
+</style>
+
+<script>
+  import { naSvakojStrani } from "../scripts/zivot";
+
+  /* Telo strane se menja bez novog učitavanja (View Transitions), pa se
+     ovo mora pokrenuti iznova na svakom prikazu. */
+  naSvakojStrani(() => {
+
+    const forma = document.querySelector<HTMLFormElement>("[data-forma]");
+    const status = document.querySelector<HTMLElement>("[data-status]");
+
+    /**
+     * Kombinacija boja izabrana na početnoj stiže kroz adresu
+     * (/kontakt?ram=...&tapacirung=...) i upisuje se u poruku, da korisnik ne
+     * mora ponovo da je kuca. Postojeći tekst se ne gazi.
+     */
+    {
+      const parametri = new URLSearchParams(location.search);
+      const ram = parametri.get("ram");
+      const tapacirung = parametri.get("tapacirung");
+      const poruka = document.querySelector<HTMLTextAreaElement>("#poruka");
+
+      // Upit sa stranice proizvoda: /kontakt?proizvod=<naziv>
+      const trazeni = parametri.get("proizvod");
+      const izbor = document.querySelector<HTMLSelectElement>("#proizvod");
+      if (trazeni && izbor) {
+        const pogodak = [...izbor.options].find((o) => o.value === trazeni);
+        if (pogodak) izbor.value = pogodak.value;
+        else if (poruka && !poruka.value.trim()) {
+          poruka.value = `Zanima me: ${trazeni}\n\n`;
+        }
+      }
+
+      if (poruka && !poruka.value.trim() && (ram || tapacirung)) {
+        const redovi = ["Zanima me sledeća kombinacija:"];
+        if (ram) redovi.push(`Plastifikacija rama: ${ram}`);
+        if (tapacirung) redovi.push(`Tapacirung: ${tapacirung}`);
+        redovi.push("", "");
+        poruka.value = redovi.join("\n");
+      }
+    }
+
+    if (forma && status) {
+      const endpoint = forma.dataset.endpoint?.trim() ?? "";
+
+      const poruke: Record<string, { prazno: string; nevalidno?: string }> = {
+        ime: { prazno: "Unesite ime i prezime." },
+        email: {
+          prazno: "Unesite e-poštu da bismo mogli da odgovorimo.",
+          nevalidno: "Proverite e-poštu — nedostaje @ ili domen.",
+        },
+        poruka: { prazno: "Napišite šta vam treba, makar u jednoj rečenici." },
+      };
+
+      const greskaZa = (polje: HTMLInputElement | HTMLTextAreaElement) => {
+        const p = poruke[polje.name];
+        if (!p) return "";
+        if (!polje.value.trim()) return p.prazno;
+        if (polje.type === "email" && !polje.checkValidity()) return p.nevalidno ?? "Nevažeća vrednost.";
+        return "";
+      };
+
+      const oznaci = (polje: HTMLInputElement | HTMLTextAreaElement) => {
+        const tekst = greskaZa(polje);
+        const cilj = document.getElementById(`${polje.name}-greska`);
+        polje.setAttribute("aria-invalid", tekst ? "true" : "false");
+        if (cilj) {
+          cilj.textContent = tekst;
+          cilj.hidden = !tekst;
+        }
+        return !tekst;
+      };
+
+      const obavezna = Array.from(
+        forma.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("[required]"),
+      );
+
+      // Validacija tek pošto polje jednom napusti fokus — ne dok se kuca.
+      obavezna.forEach((polje) => {
+        polje.addEventListener("blur", () => oznaci(polje));
+        polje.addEventListener("input", () => {
+          if (polje.getAttribute("aria-invalid") === "true") oznaci(polje);
+        });
+      });
+
+      forma.addEventListener("submit", (e) => {
+        const ispravna = obavezna.map(oznaci).every(Boolean);
+
+        if (!ispravna) {
+          e.preventDefault();
+          obavezna.find((p) => p.getAttribute("aria-invalid") === "true")?.focus();
+          return;
+        }
+
+        if (!endpoint) {
+          e.preventDefault();
+          status.hidden = false;
+          status.dataset.vrsta = "greska";
+          status.textContent =
+            "Slanje forme još nije povezano. Pozovite nas na 013 348844, radnim danom od 7 do 15.";
+        }
+      });
+    }
+  });
+</script>

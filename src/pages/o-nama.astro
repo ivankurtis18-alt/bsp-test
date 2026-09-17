@@ -1,0 +1,1164 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { Image } from "astro:assets";
+import { godineRada } from "../lib/firma";
+import pogon from "../assets/pogon.jpg";
+
+/**
+ * Tekst je preuzet sa reference (bsp.rs), ispravljene su samo štamparske greške.
+ * Izostavljene su dve brojke koje na referenci protivreče same sebi
+ * (1981 vs 1985 kao godina osnivanja, 25 vs 39 godina iskustva) — čeka se
+ * odgovor klijenta. Detalji u CLAUDE.md, sekcija 5a.
+ */
+/**
+ * Udaljenosti se crtaju kao šema, ne kao spisak. Koordinate su smer u kome
+ * mesto stvarno leži u odnosu na Pančevo (Beograd zapad, aerodrom
+ * severozapad — na šemi gore, luka jug), ali crtež NIJE u razmeri: 45 km
+ * i 6 km su namerno slični zraci jer bi tačna razmera pojela kadar.
+ * Zato na crtežu nema ni severa ni razmernika.
+ */
+const udaljenosti = [
+  {
+    mesto: "Aerodrom „Nikola Tesla”",
+    km: "45 km",
+    zrak: "M50 40V12",
+    kvaka: "M46 12h8",
+    natpis: { x: 50, y: 6, sidro: "sredina" },
+    broj: { x: 56, y: 24, sidro: "levo" },
+  },
+  {
+    mesto: "Beograd",
+    km: "17 km",
+    zrak: "M50 40H14",
+    kvaka: "M10 36v8",
+    natpis: { x: 11, y: 41, sidro: "levo" },
+    broj: { x: 23, y: 63, sidro: "levo" },
+  },
+  {
+    mesto: "Luka Dunav · carinski terminal",
+    km: "6 km",
+    zrak: "M50 40l32 20",
+    kvaka: "M78 62l8-5",
+    natpis: { x: 92, y: 93, sidro: "desno" },
+    broj: { x: 72, y: 64, sidro: "levo" },
+  },
+];
+
+/**
+ * Vremenska linija. Godine su ograničene na ono što je potvrđeno u njihovom
+ * tekstu — 1985. i „krajem devedesetih". Godine dobijanja sertifikata NISU
+ * poznate, pa stoje bez datuma dok ih klijent ne potvrdi.
+ */
+const linija = [
+  {
+    godina: "1985.",
+    naslov: "Radionica za metalni nameštaj",
+    tekst: "Firma je osnovana kao porodična, sa proizvodnjom metalnog nameštaja.",
+  },
+  {
+    godina: "Kraj '90-ih",
+    naslov: "Prelazak na medicinski program",
+    tekst:
+      "Počinje proizvodnja medicinskog programa, koji od tada postaje glavni i jedini program firme.",
+  },
+  {
+    godina: "Sertifikovano",
+    naslov: "ISO 13485, 9001 i 14001",
+    tekst:
+      "Kontrola kvaliteta proizvodnje medicinskih sredstava, sistem upravljanja kvalitetom i zaštita životne sredine.",
+  },
+  {
+    godina: "Danas",
+    naslov: "2.000 m² u Pančevu",
+    tekst: "Pedeset četiri proizvoda u dvanaest kategorija, sve po meri ustanove.",
+  },
+];
+
+/** Šta svaki standard zaista pokriva — javno znanje, ne tvrdnja o firmi. */
+const standardi = [
+  {
+    oznaka: "ISO 13485",
+    naslov: "Medicinska sredstva",
+    tekst:
+      "Sistem upravljanja kvalitetom pisan posebno za proizvođače medicinskih sredstava. Traži sledljivost serije, upravljanje rizikom i kontrolu izmena na proizvodu.",
+  },
+  {
+    oznaka: "ISO 9001",
+    naslov: "Kvalitet",
+    tekst:
+      "Opšti sistem upravljanja kvalitetom — kako se procesi planiraju, prate i popravljaju kada odstupe.",
+  },
+  {
+    oznaka: "ISO 14001",
+    naslov: "Životna sredina",
+    tekst:
+      "Upravljanje uticajem proizvodnje na životnu sredinu: otpad, potrošnja i postupanje sa materijalima.",
+  },
+];
+
+const blokovi = [
+  {
+    labela: "Tim",
+    pasusi: [
+      "Posedujemo profesionalni tim ljudi za proizvodnju, kontrolu kvaliteta, prodaju i servis posle prodaje. Svojim dugogodišnjim iskustvom, stalnim razvojem i sprovođenjem kontrole kvaliteta, stvaranjem kvalitetnog menadžmenta, firma je dobila sertifikat ISO 13485 za kontrolu kvaliteta proizvodnje medicinskih sredstava. Ujedno poseduje i sertifikate ISO 9001 i ISO 14001.",
+      "Firma je posvećena kontroli serija proizvodnje medicinskih sredstava: bolničkih kreveta (manuelnih i elektro), dijagnostičkih kreveta, kreveta za transport pacijenata, raznih kolica, stolica za transfuziju i ostalih proizvoda iz svog proizvodnog programa.",
+    ],
+    standardi: true,
+  },
+  {
+    labela: "Pouzdanost",
+    pasusi: [
+      "Zahvaljujući pouzdanosti proizvoda, rešavanju problema funkcionalnosti proizvoda, stalnom usavršavanju, razumnoj ceni i mogućnosti izrade po zahtevu kupca, firma je postala konkurentna i visoko profesionalna na teritoriji Srbije i van nje.",
+      "Ponosni smo što se naši proizvodi nalaze u funkciji očuvanja zdravlja i što su svoje mesto našli u vodećim državnim i privatnim zdravstvenim ustanovama. Naša vrata su za Vas uvek otvorena. Očekujemo Vas.",
+    ],
+    standardi: false,
+  },
+  {
+    labela: "BSP",
+    pasusi: [
+      "Firma BSP je porodična firma koja posluje kao samostalna zanatska radnja kroz dva odvojena subjekta pod nazivima SZR BSP-MGM i SZR BSP-Marković. Posluje težeći da sačuva duh zanatstva, čime omogućava veliku fleksibilnost proizvodnje i spremnost da ispuni zahteve kupaca u pogledu dizajniranja željenog proizvoda.",
+      "Koristeći znanje i savremenu tehnologiju u poslovnom prostoru od oko 2.000 m², težimo da Vama, kao našim poslovnim partnerima, isporučimo proizvode visoke upotrebne vrednosti.",
+    ],
+    standardi: false,
+  },
+];
+---
+
+<Layout
+  naslov="O nama — proizvodnja medicinske opreme od 1985"
+  opis="BSP-MGM je porodična firma iz Pančeva, osnovana 1985. Od kraja devedesetih proizvodi isključivo medicinsku opremu. Sertifikati ISO 13485, ISO 9001 i ISO 14001."
+  aktivna="o-nama"
+>
+  {/* ══════════════════════════ UVOD ══════════════════════════
+       Strana je do sada bila najslabija na sajtu: 6.152px teksta, najveći
+       tip 52px, sedam sekcija iste važnosti i nijedan trenutak koji nosi.
+
+       Sada je otvara GODINA. „1985" je jedini podatak koji ova strana ima a
+       nijedna druga nema, i zato ide u razmeri koju ostatak sajta nigde ne
+       koristi — isečena desnom ivicom ekrana. */}
+  <section class="uvod">
+    <div class="shell">
+      <div class="uvod-mreza" data-otkrij-grupa>
+        <div class="uvod-tekstualno">
+          <p class="t-labela eyebrow" data-otkrij>O nama</p>
+          <h1 class="t-h2 naslov" data-otkrij data-maska>
+            Porodična firma<br />iz Pančeva.
+          </h1>
+          <p class="t-lead uvod-tekst" data-otkrij data-smer="mir">
+            Firma BSP-MGM osnovana je 1985. godine kao porodična firma za proizvodnju metalnog
+            nameštaja. Krajem devedesetih počinje sa proizvodnjom medicinskog programa, da bi
+            danas to bio njen glavni i jedini program.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    {/* Godina stoji IZVAN `.shell`-a i viri preko desne ivice. Isečak je
+        namera: broj je očigledno veći od kadra koji ga prikazuje. */}
+    <p class="godina" aria-hidden="true" data-otkrij data-smer="x">
+      <span class="godina-broj">1985</span>
+    </p>
+    <p class="vizuelno-skriveno">Osnovani 1985. godine.</p>
+  </section>
+
+  {/* ══════════════════════════ POGON ══════════════════════════
+       Jedina fotografija na strani. Stoji preko cele širine, odmah posle
+       uvoda: rečenica kaže „porodična firma", slika kaže gde. Skala je
+       namerna — do sada je strana bila 3.500px čistog teksta.
+       Slika je sa početne uklonjena na traženje korisnika; ovde je na
+       svom mestu jer je strana o firmi, a ne o proizvodu. */}
+  <section class="pogon-sekcija" aria-label="Proizvodni pogon">
+    <figure class="pogon-figura">
+      <div class="pogon-kadar" data-parallax>
+        <Image
+          src={pogon}
+          alt="Proizvodni pogon BSP-a u Pančevu"
+          widths={[720, 1200, 1800]}
+          sizes="100vw"
+          loading="lazy"
+          decoding="async"
+          class="pogon-slika"
+        />
+      </div>
+      <figcaption class="pogon-potpis shell">
+        <span class="t-labela-sm">Pogon · Pančevo</span>
+        <span class="pogon-potpis-tekst">
+          Dve hiljade kvadrata pod jednim krovom. Rezanje, zavarivanje, plastifikacija i
+          tapaciranje idu na istom mestu — otud i izrada po meri.
+        </span>
+      </figcaption>
+    </figure>
+  </section>
+
+  {/* ══════════════════════════ LOKACIJA ══════════════════════════ */}
+  <section class="section-tight" aria-labelledby="lokacija">
+    <div class="shell" data-otkrij-grupa>
+      <div class="dvokolona">
+        <div class="lepljivo">
+          <h2 class="t-labela labela-kolone" id="lokacija" data-otkrij data-smer="x">Lokacija</h2>
+        </div>
+        <p class="telo" data-otkrij>
+          Firma se nalazi u Pančevu, gradu na ušću dve reke — Dunava i Tamiša — u Vojvodini, na
+          17 km od Beograda. Od beogradskog aerodroma „Nikola Tesla” udaljeni smo 45 km, a od
+          rečne luke na Dunavu u Pančevu, „Luka Dunav”, 6 km. Luka u svom sastavu ima carinski
+          terminal za drumski i rečni saobraćaj.
+        </p>
+      </div>
+
+      {/* Udaljenosti kao tehnički crtež, ne kao spisak. Pravac „Merenje":
+          kote se iscrtavaju, brojevi odbrojavaju. */}
+      <figure class="mapa" data-otkrij data-smer="mir">
+      <div class="mapa-okvir">
+        {/*
+          Samo linije idu u SVG. Natpisi su HTML preko njega, pozicionirani
+          u procentima: tekst u `viewBox` jedinicama menja veličinu sa
+          širinom crteža — mereno je 33px na desktopu i 9px na mobilnom iz
+          istog `font-size: 2.6`. U HTML-u ostaje u rem-u i ne mrda.
+        */}
+        <svg
+          class="mapa-crtez"
+          viewBox="0 0 100 72"
+          role="img"
+          aria-label={`Šema udaljenosti od Pančeva — ${udaljenosti.map((u) => `${u.mesto} ${u.km}`).join(", ")}`}
+        >
+          <g class="mapa-zraci">
+            {udaljenosti.map((u) => <path pathLength="1" d={u.zrak} />)}
+          </g>
+          <g class="mapa-kvake">
+            {udaljenosti.map((u) => <path pathLength="1" d={u.kvaka} />)}
+          </g>
+          <circle class="mapa-centar" cx="50" cy="40" r="2.4" />
+        </svg>
+
+        <div class="mapa-natpisi" aria-hidden="true">
+          {
+            udaljenosti.map((u) => (
+              <>
+                <span
+                  class={`t-labela-sm mapa-mesto sidro-${u.natpis.sidro}`}
+                  style={`left:${u.natpis.x}%;top:${u.natpis.y}%`}
+                >
+                  {u.mesto}
+                </span>
+                <span
+                  class={`mapa-broj sidro-${u.broj.sidro}`}
+                  style={`left:${u.broj.x}%;top:${u.broj.y}%`}
+                >
+                  {u.km}
+                </span>
+              </>
+            ))
+          }
+          <span class="t-labela-sm mapa-centar-natpis sidro-sredina" style="left:50%;top:67%">
+            Pančevo
+          </span>
+        </div>
+      </div>
+        <figcaption class="t-labela-sm mapa-potpis">
+          Novoseljanski put 139A · luka ima carinski terminal za drumski i rečni saobraćaj
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  {/* ══════════════════════════ BLOKOVI ══════════════════════════ */}
+  <section class="section-tight" aria-label="O firmi">
+    <div class="shell" data-otkrij-grupa>
+      {
+        blokovi.map((b) => (
+          <div class="dvokolona blok" data-otkrij data-smer="x">
+            <h2 class="t-labela labela-kolone plava">{b.labela}</h2>
+            <div class="telo">
+              {b.pasusi.map((p) => (
+                <p>{p}</p>
+              ))}
+              {b.standardi && (
+                <div class="std-lista">
+                  <span class="std">ISO 13485</span>
+                  <span class="std">ISO 9001</span>
+                  <span class="std">ISO 14001</span>
+                </div>
+              )}
+            </div>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  {/* ══════════════════════════ VREMENSKA LINIJA ══════════════════════════ */}
+  {/* Vreme se PROLAZI, ne pregleda.
+
+      Ranije su četiri tačke stajale u redu preko cele širine (dijagonalno
+      spuštene) i videle se odjednom — četrdeset godina kao jedan pogled.
+      Sada se godine ZALEPE sa strane, sve četiri odjednom, a sadržaj
+      prolazi pored njih; aktivnu bira isti posmatrač kao u „Izbliza"
+      (pojas -45%/-45%, uvek tačno jedna).
+
+      Godina se NE ponavlja u obe kolone — na širokom je nosi šina, pa je u
+      stavci sakrivena. Time šina postaje nužna, a ne ukras.
+
+      Tekst se NE prigušuje kao u „Izbliza". Tamo je podloga tamna; ovde bi
+      `--color-siva` na 0,32 pao daleko ispod AA. Aktivnost nosi šina. */}
+  <section class="section-glasna linija-sekcija" aria-labelledby="linija-naslov">
+    <div class="shell linija-mreza" data-otkrij-grupa>
+      <div class="linija-sina-omot">
+        <div class="linija-lepljivo">
+          {/* Arhetip A — figura vodi. Broj godina je jedini podatak koji ovu
+              sekciju definiše. */}
+          <h2 class="zaglavlje-brojka istureno" id="linija-naslov" data-otkrij data-maska>
+            <span class="figura">{godineRada()}</span>
+            <span class="uz-figuru">
+              <span class="t-labela">godina</span>
+              <span class="uz-figuru-tekst t-lead">
+                Od radionice za metalni nameštaj do jedinog programa firme.
+              </span>
+            </span>
+          </h2>
+
+          {/* `aria-hidden`: šina je vizuelni pregled istog sadržaja koji
+              stavke već nose. Čitač ekrana bi je čitao dvaput. */}
+          <ol class="linija-sina" aria-hidden="true">
+            {linija.map((t, i) => (
+              <li class="linija-sina-stavka" data-sina={i} data-aktivna={i === 0 ? "" : undefined}>
+                <span class="linija-marker" />
+                <span class="t-mono-sm linija-godina">{t.godina}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </div>
+
+      <ol class="linija">
+        {
+          linija.map((t, i) => (
+            <li class="linija-tacka" data-linija-stavka={i} data-otkrij data-smer="x">
+              <span class="t-mono-sm linija-godina linija-godina-uska">{t.godina}</span>
+              <span class="linija-marker linija-marker-uski" aria-hidden="true" />
+              <h3 class="t-h3 linija-naslov">{t.naslov}</h3>
+              <p class="linija-tekst">{t.tekst}</p>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+  </section>
+
+  {/* ══════════════════════════ STANDARDI ══════════════════════════ */}
+  <section class="section-tight" aria-labelledby="standardi-naslov">
+    <div class="shell" data-otkrij-grupa>
+      {/* Arhetip B — rečenica vodi. Naslov i lead su govorili istu stvar
+          dvaput; sada je to jedna tvrdnja, sa objašnjenjem povučenim u sivo. */}
+      <div class="std-zaglavlje kol-3">
+        <h2 class="zaglavlje-recenica" id="standardi-naslov" data-otkrij data-maska>
+          Tri bedža ne govore ništa <span class="tiho">dok se ne zna šta pokrivaju.</span>
+        </h2>
+      </div>
+
+      <ul class="std-lista-veliki kol-3">
+        {
+          standardi.map((x) => (
+            <li class="std-kartica" data-otkrij data-smer="x">
+              <span class="t-mono std-oznaka">{x.oznaka}</span>
+              <h3 class="t-h3 std-naslov">{x.naslov}</h3>
+              <p class="std-tekst">{x.tekst}</p>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+
+  {/* ══════════════════════════ CITAT ══════════════════════════ */}
+  {/* Tamno poglavlje ove strane. Citat je mesto gde firma progovori u prvom
+      licu — jedina rečenica na sajtu koja nije opis nego stav. Tamno stoji
+      tu, a ne pred podnožjem. */}
+  <section class="section-glasna poglavlje-tamno" aria-label="Poruka vlasnika">
+    <div class="shell" data-otkrij-grupa>
+      <figure class="citat kol-4" data-otkrij data-smer="mir">
+        <blockquote>
+          <p class="citat-tekst">Vi znate šta Vam treba,<br />mi znamo da proizvedemo.</p>
+        </blockquote>
+        <figcaption class="t-labela-sm citat-potpis">
+          Božidar Marković <span aria-hidden="true">—</span> preduzetnik
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  {/* ══════════════════════════ POZIV ══════════════════════════ */}
+  {/* Zatvaranje je jedan red, ne blok. Isti CTA blok je stajao na četiri
+      strane i čitao se kao ista komponenta četiri puta — copy se razlikovao,
+      forma nije. Ovde je strana o firmi: posle nje se ide na proizvode, i
+      to je cela poruka. */}
+  <section class="zavrsni-red">
+    <div class="shell">
+      <a href="/proizvodi" class="zavrsna-veza" data-otkrij data-smer="x">
+        <span class="t-labela zavrsna-labela">Dalje</span>
+        <span class="zavrsni-tekst">Pogledajte šta proizvodimo</span>
+        <svg class="strelica" width="22" height="12" viewBox="0 0 16 10" fill="none" aria-hidden="true">
+          <path d="M11 1L15 5L11 9M15 5H0" stroke="currentColor" stroke-width="1.4"></path>
+        </svg>
+      </a>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .uvod {
+    position: relative;
+    padding-top: clamp(7.5rem, 13vw, 11rem);
+    padding-bottom: clamp(1.5rem, 3vw, 2.5rem);
+    /* Godina viri van desne ivice — bez ovoga strana dobija vodoravni skrol. */
+    overflow-x: clip;
+  }
+
+  .uvod-mreza {
+    position: relative;
+    z-index: 1;
+  }
+
+  .uvod-tekstualno {
+    max-width: 34rem;
+  }
+
+  /* ── Godina ───────────────────────────────────────────────────────────
+     Jedina stvar na sajtu koja sme ovoliko da bude velika. Boja je ivica,
+     ne tekst: broj je konstrukcija strane, a ne rečenica koja se čita —
+     sadržaj za čitače ekrana stoji u skrivenom pasusu iznad. */
+  .godina {
+    margin: clamp(2rem, 4vw, 3.5rem) 0 0;
+    line-height: 0.78;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .godina-broj {
+    display: block;
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+    /* 48vw, BEZ gornje kapice. Sa `clamp(…, 27vw, 24rem)` broj je na 1440
+       završavao na 879px — 561px pre ivice, dakle nije se sekao uopšte.
+       „1985" je u ovom pismu široko 2,1× veličine slova, pa je za rez
+       potrebno više od 45vw na svakoj širini; 48vw daje dosledan rez od
+       ~6% poslednje cifre na svim ekranima. */
+    font-size: max(5.5rem, 48vw);
+    font-weight: 600;
+    letter-spacing: -0.05em;
+    color: var(--color-ivica);
+    /* Isečena desnom ivicom: broj počinje u sadržaju i izlazi iz kadra. */
+    margin-inline-start: clamp(1.25rem, 5vw, 5rem);
+    white-space: nowrap;
+  }
+
+  @media (min-width: 900px) {
+    .uvod-mreza {
+      /* Tekst se povlači udesno dok broj drži levu ivicu — dve težine, ne
+         dve kolone iste važnosti. */
+      padding-inline-start: 25%;
+    }
+  }
+
+  .eyebrow {
+    color: var(--color-siva);
+    margin-bottom: clamp(1.25rem, 2.5vw, 2rem);
+  }
+
+  .naslov {
+    margin-block: 0 clamp(1.75rem, 3vw, 2.5rem);
+  }
+
+  .uvod-tekst {
+    max-width: 54ch;
+    color: var(--color-celik);
+    font-weight: 500;
+  }
+
+  /* Jedna osa kroz celu stranu: labela levo, tekst desno. */
+  .dvokolona {
+    display: grid;
+    gap: 0.85rem;
+  }
+
+  .labela-kolone {
+    margin: 0;
+    color: var(--color-siva);
+  }
+
+  .plava {
+    color: var(--color-plava);
+  }
+
+  .telo {
+    display: flex;
+    flex-direction: column;
+    gap: 1.15rem;
+    max-width: 68ch;
+    color: var(--color-siva);
+    font-size: 1.0625rem;
+    line-height: 1.7;
+  }
+
+  .telo p {
+    margin: 0;
+  }
+
+  .blok {
+    padding-block: clamp(1.75rem, 3vw, 2.75rem);
+    border-bottom: 1px solid var(--color-ivica);
+  }
+
+  .blok:first-child {
+    border-top: 1px solid var(--color-ivica);
+  }
+
+  .std-lista {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.6rem;
+  }
+
+  /* ISO standardi su potvrda, ne radnja — otud zelena. */
+  .std {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    letter-spacing: 0.05em;
+    padding: 0.4rem 0.75rem;
+    border: 1px solid color-mix(in oklab, var(--color-zelena) 30%, transparent);
+    background: color-mix(in oklab, var(--color-zelena) 6%, var(--color-bela));
+    color: var(--color-zelena);
+  }
+
+  /* ── Šematska mapa udaljenosti ────────────────────────────────────────
+     Spisak od tri stavke je bio tabela. Ovde je isti podatak tehnički
+     crtež: Pančevo u centru, tri zraka sa kotama. Zraci su šematski —
+     uglovi prate raspored gradova u prostoru, ne geografsku tačnost, i
+     zato na crtežu ne stoji ni razmera ni sever. */
+  .mapa {
+    margin: clamp(2.25rem, 4vw, 3.5rem) 0 0;
+    padding-top: clamp(1.5rem, 3vw, 2.25rem);
+    border-top: 1px solid var(--color-ivica);
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  /* Crtež ima gornju granicu: bez nje se na 1440px razvuče na 1296px i
+     šema prestane da bude šema. */
+  .mapa-okvir {
+    position: relative;
+    width: 100%;
+    max-width: 34rem;
+  }
+
+  .mapa-crtez {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+
+  .mapa-zraci path,
+  .mapa-kvake path {
+    fill: none;
+    stroke: var(--color-zelena);
+    stroke-width: 0.28;
+    vector-effect: non-scaling-stroke;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+
+  .mapa-zraci path {
+    stroke-dasharray: 1;
+    opacity: 0.75;
+  }
+
+  .mapa-centar {
+    fill: var(--color-plava);
+    opacity: 0;
+  }
+
+  .mapa-natpisi {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .mapa-natpisi > span {
+    position: absolute;
+    white-space: nowrap;
+    opacity: 0;
+    line-height: 1;
+  }
+
+  /* Sidro određuje kojom ivicom natpis stoji na svojoj tački. */
+  .sidro-levo {
+    transform: translateY(-50%);
+  }
+  .sidro-sredina {
+    transform: translate(-50%, -50%);
+  }
+  .sidro-desno {
+    transform: translate(-100%, -50%);
+  }
+
+  .mapa-mesto {
+    color: var(--color-siva);
+  }
+
+  .mapa-broj {
+    font-family: var(--font-mono);
+    font-size: clamp(1rem, 1.6vw, 1.35rem);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-celik);
+  }
+
+  .mapa-centar-natpis {
+    color: var(--color-plava);
+  }
+
+  /* Crtež se iscrtava kad uđe u kadar — isti postupak kao kote u „Izbliza". */
+  .mapa[data-vidljiv] .mapa-zraci path,
+  .mapa[data-vidljiv] .mapa-kvake path {
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .mapa[data-vidljiv] .mapa-kvake path {
+    transition-delay: 0.5s;
+  }
+
+  .mapa[data-vidljiv] .mapa-centar {
+    opacity: 1;
+    transition: opacity 0.4s ease;
+  }
+
+  .mapa[data-vidljiv] .mapa-natpisi > span {
+    opacity: 1;
+    transition: opacity 0.5s ease 0.65s;
+  }
+
+  /* BEZ JS-a ŠEMA MORA DA STOJI GOTOVA.
+
+     Zraci, kote i natpisi kreću od `stroke-dashoffset: 1` i `opacity: 0`, a
+     pali ih `data-vidljiv` koji upisuje skripta. Bez skripte je izmereno
+     **8 nevidljivih elemenata** — ceo crtež udaljenosti je nestajao, a
+     sekcija „Lokacija" ostajala prazna.
+
+     `:global()` je OBAVEZNO: `.no-js` stoji na `<html>`, izvan ove
+     komponente, pa bi mu Astro dodao scope klasu koju taj element nema
+     (CLAUDE.md, 5b — ista zamka je već jednom oborila hero). */
+  :global(.no-js) .mapa-zraci path,
+  :global(.no-js) .mapa-kvake path {
+    stroke-dashoffset: 0;
+  }
+
+  :global(.no-js) .mapa-centar,
+  :global(.no-js) .mapa-natpisi > span {
+    opacity: 1;
+  }
+
+  .mapa-potpis {
+    color: var(--color-siva);
+    margin: 0;
+    text-transform: none;
+    letter-spacing: 0.02em;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mapa-zraci path,
+    .mapa-kvake path {
+      stroke-dashoffset: 0;
+    }
+    .mapa-centar,
+    .mapa-natpisi > span {
+      opacity: 1;
+    }
+  }
+
+  /* ── Pogon ───────────────────────────────────────────────────────────
+     Kadar je kraći od slike i seče je (`overflow: hidden` + uvećana
+     visina), pa parallax ima šta da pomera bez praznine na ivicama. */
+  .pogon-sekcija {
+    padding-block: clamp(3rem, 7vw, 6rem) 0;
+  }
+
+  .pogon-figura {
+    margin: 0;
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .pogon-kadar {
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 16 / 9;
+    max-height: 72vh;
+    background: var(--color-ivica);
+  }
+
+  /* Skript za parallax sam podiže sliku na scale 1.18 i pomera je ±7%,
+     pa ovde stoji tačno u kadru — bez toga bi se videla ivica. */
+  .pogon-slika {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .pogon-potpis {
+    display: grid;
+    gap: 0.5rem;
+    color: var(--color-siva);
+  }
+
+  .pogon-potpis .t-mono-sm {
+    color: var(--color-zelena);
+  }
+
+  .pogon-potpis-tekst {
+    max-width: 52ch;
+    line-height: 1.7;
+  }
+
+  @media (min-width: 860px) {
+    .pogon-potpis {
+      grid-template-columns: 12rem 1fr;
+      gap: clamp(1.5rem, 3vw, 3rem);
+      align-items: start;
+    }
+  }
+
+  .uz-figuru {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .uz-figuru-tekst {
+    display: block;
+    max-width: 44ch;
+  }
+
+  /* ── Zajednički naslov odeljka ─────────────────────────────────────── */
+  /* `margin-block`, ne skraćenica `margin`: skraćenica postavlja i BOČNE
+     margine na 0 i time gasi klase polja (`.istureno`, `.kol-*`). Svaki
+     element koji sme da dobije klasu polja mora da koristi `margin-block`. */
+  .odeljak-naslov {
+    margin-block: 0 clamp(2rem, 4vw, 3.25rem);
+    max-width: 18ch;
+  }
+
+  /* ── Vremenska linija ─────────────────────────────────────────────────
+     Vodoravna traka na desktopu, uspravna na mobilnom. Marker sedi na
+     samoj liniji, pa je datum uvek vezan za tačku, ne za ceo blok. */
+  .linija {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0;
+  }
+
+  .linija-tacka {
+    display: grid;
+    gap: 0.5rem;
+    padding-block: clamp(1.5rem, 3vw, 2.25rem);
+    border-top: 1px solid var(--color-ivica);
+    position: relative;
+  }
+
+  .linija-tacka:last-child {
+    border-bottom: 1px solid var(--color-ivica);
+  }
+
+  /* Uski ekran: šine nema (nema je gde staviti), pa godina i marker stoje u
+     samoj stavci — mobilni ima svoj potez, ne osiromašen desktop. */
+  .linija-sina-omot {
+    display: contents;
+  }
+
+  .linija-sina {
+    display: none;
+  }
+
+  /* Na uskom ekranu dijagonala ne može da ide udesno kroz kolone, pa ide
+     kroz UVLAČENJE: svaka tačka počinje dublje od prethodne. Isti podatak
+     (vreme ima smer i dužinu), izveden sredstvom koje uspravan niz dozvoljava.
+     Ranije je ovde bilo `margin-block-start: 0` na sve četiri — mobilni je
+     dobijao ravan spisak. */
+  @media (max-width: 719px) {
+    .linija-tacka:nth-child(2) {
+      padding-inline-start: 1.5rem;
+    }
+    .linija-tacka:nth-child(3) {
+      padding-inline-start: 3rem;
+    }
+    .linija-tacka:nth-child(4) {
+      padding-inline-start: 4.5rem;
+    }
+    .linija-tacka:nth-child(2) .linija-marker {
+      left: 1.5rem;
+    }
+    .linija-tacka:nth-child(3) .linija-marker {
+      left: 3rem;
+    }
+    .linija-tacka:nth-child(4) .linija-marker {
+      left: 4.5rem;
+    }
+  }
+
+  /* Dijagonala se pali tek od 720px — vidi breakpoint. */
+
+  .linija-godina {
+    color: var(--color-zelena);
+  }
+
+  .linija-marker {
+    position: absolute;
+    top: -3.5px;
+    left: 0;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--color-bela);
+    border: 1px solid var(--color-zelena);
+  }
+
+  .linija-tacka[data-vidljiv] .linija-marker {
+    background: var(--color-zelena);
+    transition: background 0.45s ease 0.2s;
+  }
+
+  .linija-naslov {
+    margin: 0;
+  }
+
+  .linija-tekst {
+    margin: 0;
+    color: var(--color-siva);
+    max-width: 42ch;
+    line-height: 1.7;
+  }
+
+  /* ── Standardi objašnjeni ─────────────────────────────────────────── */
+  .std-zaglavlje {
+    display: grid;
+    gap: 0.75rem;
+    margin-bottom: clamp(2rem, 4vw, 3rem);
+  }
+
+  .std-zaglavlje .odeljak-naslov {
+    margin-bottom: 0;
+    max-width: 22ch;
+  }
+
+  .std-uvod {
+    margin: 0;
+    max-width: 46ch;
+  }
+
+  .std-lista-veliki {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0;
+    border-top: 1px solid var(--color-ivica);
+  }
+
+  .std-kartica {
+    display: grid;
+    gap: 0.6rem;
+    padding-block: clamp(1.75rem, 3vw, 2.5rem);
+    border-bottom: 1px solid var(--color-ivica);
+  }
+
+  .std-oznaka {
+    color: var(--color-zelena);
+  }
+
+  .std-naslov {
+    margin: 0;
+  }
+
+  .std-kartica .std-tekst {
+    margin: 0;
+    color: var(--color-siva);
+    line-height: 1.7;
+    max-width: 52ch;
+  }
+
+  /* Citat */
+  .citat {
+    margin-block: 0;
+    display: grid;
+    gap: 1.5rem;
+    justify-items: start;
+  }
+
+  .citat blockquote {
+    margin: 0;
+  }
+
+  .citat-tekst {
+    margin: 0;
+    font-size: clamp(1.5rem, 3.4vw, 2.75rem);
+    font-weight: 500;
+    line-height: 1.15;
+    letter-spacing: -0.028em;
+    text-wrap: balance;
+    max-width: 20ch;
+  }
+
+  .citat-potpis {
+    color: var(--color-siva);
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-ivica);
+    min-width: min(100%, 18rem);
+  }
+
+  /* ── Zatvaranje: jedan red ───────────────────────────────────────── */
+  .zavrsni-red {
+    padding-block: clamp(2.5rem, 5vw, 4.5rem) clamp(3.5rem, 7vw, 6rem);
+  }
+
+  .zavrsna-veza {
+    display: flex;
+    align-items: baseline;
+    gap: clamp(1rem, 3vw, 2.5rem);
+    padding-top: clamp(1.25rem, 2.5vw, 2rem);
+    border-top: 1px solid var(--color-celik);
+    color: var(--color-celik);
+    text-decoration: none;
+  }
+
+  .zavrsna-labela {
+    color: var(--color-siva);
+    flex: none;
+  }
+
+  .zavrsni-tekst {
+    font-size: var(--text-h2);
+    font-weight: 600;
+    line-height: 1.05;
+    letter-spacing: -0.025em;
+    flex: 1;
+    transition: color 0.5s var(--ease-sala);
+  }
+
+  .zavrsna-veza .strelica {
+    flex: none;
+    align-self: center;
+    transition: transform 0.55s var(--ease-sala);
+  }
+
+  .zavrsna-veza:hover .zavrsni-tekst,
+  .zavrsna-veza:focus-visible .zavrsni-tekst {
+    color: var(--color-plava);
+  }
+
+  .zavrsna-veza:hover .strelica,
+  .zavrsna-veza:focus-visible .strelica {
+    transform: translateX(10px);
+  }
+
+  /* Poziv */
+  .poziv {
+    border-top: 1px solid var(--color-ivica);
+  }
+
+  .poziv-unutra {
+    display: grid;
+    gap: clamp(2rem, 4vw, 4rem);
+  }
+
+  .poziv-desno {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+    max-width: 44ch;
+  }
+
+  .poziv-akcije {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .poziv-tel {
+    color: var(--color-plava);
+  }
+
+  @media (min-width: 720px) {
+    /* ── DIJAGONALA ────────────────────────────────────────────────────
+       Ranije red od četiri jednake ćelije: četrdeset godina je izgledalo
+       kao četiri jednako važna trenutka poređana u tabelu.
+
+       Sada svaka tačka stoji niže od prethodne. Vreme na crtežu ide i
+       udesno i naniže, pa se dužina puta VIDI umesto da se samo pročita —
+       poslednja tačka je za tri koraka spuštena u odnosu na prvu.
+
+       Spuštanje je `margin-block-start`, ne `transform`: pomera i okvir, pa
+       zajednička linija ispod ostaje tačna i nema preklapanja. */
+    /* Kolone po težini: leva nosi figuru i četiri godine, desna četiri
+       pasusa — `1fr 1fr` bi levu ostavilo u praznini. */
+    /* BEZ `align-items: start`. Ovo je već zapisano pravilo (CLAUDE.md,
+       „Izbliza") i ovde je ponovljeno kao greška: sa `start` se leva kolona
+       ne rastegne na visinu reda, pa lepljivi blok nema kroz šta da putuje
+       i sekcija se samo skroluje. Izmereno pre ispravke: put = −366px,
+       zalepljen u 0 od 17 uzoraka. */
+    .linija-mreza {
+      display: grid;
+      grid-template-columns: 0.82fr 1.18fr;
+      gap: clamp(2rem, 5vw, 4.5rem);
+    }
+
+    .linija-sina-omot {
+      display: block;
+    }
+
+    /* Lepljivo, ne GSAP pin: ne dira raspored i ne ume da se razmine sa
+       Lenis-om (CLAUDE.md). Put lepljenja = visina kolone sa stavkama minus
+       visina ovog bloka. */
+    .linija-lepljivo {
+      position: sticky;
+      top: clamp(7rem, 16vh, 10rem);
+    }
+
+    .linija-sina {
+      display: grid;
+      gap: 0.85rem;
+      list-style: none;
+      margin: clamp(1.75rem, 3.5vw, 2.75rem) 0 0;
+      padding: 0;
+      border-left: 1px solid var(--color-ivica);
+    }
+
+    .linija-sina-stavka {
+      position: relative;
+      padding-left: 1.4rem;
+      color: var(--color-siva);
+      transition:
+        color 0.5s var(--ease-dolazak),
+        opacity 0.5s var(--ease-dolazak);
+      opacity: 0.55;
+    }
+
+    .linija-sina-stavka[data-aktivna] {
+      opacity: 1;
+    }
+
+    .linija-sina-stavka[data-aktivna] .linija-godina {
+      color: var(--color-zelena);
+    }
+
+    .linija-sina .linija-marker {
+      top: 50%;
+      left: -4px;
+      transform: translateY(-50%);
+      background: var(--color-sala);
+      transition:
+        background 0.5s var(--ease-dolazak),
+        transform 0.5s var(--ease-sprava);
+    }
+
+    .linija-sina-stavka[data-aktivna] .linija-marker {
+      background: var(--color-zelena);
+      transform: translateY(-50%) scale(1.5);
+    }
+
+    /* Godina i marker žive u šini — u stavci bi se ponavljali. */
+    .linija-godina-uska,
+    .linija-marker-uski {
+      display: none;
+    }
+
+    .linija {
+      grid-template-columns: 1fr;
+    }
+
+    /* Stavka dobija vazduh da bi lepljenje imalo kroz šta da putuje.
+       Izmereno: bez ovoga je cela sekcija 819px i šina se ne pomeri. */
+    .linija-tacka {
+      border-top: 1px solid var(--color-ivica);
+      padding-block: clamp(2.25rem, 5vw, 4rem);
+      align-content: start;
+    }
+    .linija-tacka:last-child {
+      border-bottom: 0;
+    }
+    .linija-marker {
+      left: clamp(1.25rem, 2.5vw, 2rem);
+    }
+    .linija-tacka:first-child .linija-marker {
+      left: 0;
+    }
+
+    .std-kartica {
+      grid-template-columns: 10rem 1fr;
+      gap: clamp(1.5rem, 3vw, 2.5rem);
+      align-items: start;
+    }
+    .std-oznaka {
+      grid-row: span 2;
+      padding-top: 0.45rem;
+    }
+  }
+
+  @media (min-width: 1000px) {
+    .dvokolona {
+      grid-template-columns: 1fr 1.15fr;
+      gap: clamp(2.5rem, 5vw, 4.5rem);
+    }
+    .lepljivo {
+      position: sticky;
+      top: 140px;
+      align-self: start;
+    }
+    .poziv-unutra {
+      grid-template-columns: 1.18fr 0.82fr;
+      align-items: start;
+    }
+  }
+</style>
+
+<script>
+  import { naSvakojStrani } from "../scripts/zivot";
+
+  /* Telo strane se menja bez novog učitavanja (View Transitions), pa se ovo
+     mora pokrenuti iznova na svakom prikazu — CLAUDE.md, pravilo 12. */
+  naSvakojStrani(() => {
+    const stavke = [...document.querySelectorAll<HTMLElement>("[data-linija-stavka]")];
+    const godine = [...document.querySelectorAll<HTMLElement>("[data-sina]")];
+    if (!stavke.length || !godine.length) return;
+
+    let tekuca = 0;
+    const postavi = (i: number) => {
+      if (i === tekuca) return;
+      godine[tekuca]?.removeAttribute("data-aktivna");
+      godine[i]?.setAttribute("data-aktivna", "");
+      tekuca = i;
+    };
+
+    /* Isti pojas kao „Izbliza": stavka je „na redu" dok prolazi kroz uzak
+       pojas oko sredine ekrana, pa je aktivna uvek tačno jedna. */
+    const posmatrac = new IntersectionObserver(
+      (unosi) => {
+        const usla = unosi
+          .filter((u) => u.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+        if (!usla) return;
+        const i = Number(usla.target.getAttribute("data-linija-stavka"));
+        if (Number.isFinite(i)) postavi(i);
+      },
+      { rootMargin: "-45% 0px -45% 0px", threshold: 0 },
+    );
+
+    stavke.forEach((s) => posmatrac.observe(s));
+    return () => posmatrac.disconnect();
+  });
+</script>

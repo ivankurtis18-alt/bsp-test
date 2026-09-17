@@ -1,0 +1,844 @@
+---
+import { Image } from "astro:assets";
+import Layout from "../layouts/Layout.astro";
+import SlikaProizvoda from "../components/SlikaProizvoda.astro";
+import katalog from "../../data/proizvodi.json";
+import { glavnaSlika } from "../lib/slike";
+
+const { proizvodi, kategorije } = katalog;
+
+import { tipProizvoda } from "../lib/katalog";
+
+type Proizvod = (typeof proizvodi)[number];
+
+/**
+ * Katalog se ne filtrira, nego se čita.
+ * Svaka kategorija je sekcija sa svojim sidrom (#slug), lepljivi indeks
+ * levo prati gde se nalaziš. Radi i bez JS-a.
+ */
+const sekcije = kategorije.map((k) => {
+  const stavke = proizvodi.filter((p) => p.kategorija === k.slug);
+
+  const grupe: { naziv: string | null; stavke: Proizvod[] }[] = [];
+
+  if (k.podkategorije.length) {
+    for (const pod of k.podkategorije) {
+      const u = stavke.filter((p) => p.podkategorija === pod.slug);
+      if (u.length) grupe.push({ naziv: pod.naziv, stavke: u });
+    }
+    const bez = stavke.filter((p) => !p.podkategorija);
+    if (bez.length) grupe.push({ naziv: null, stavke: bez });
+  } else {
+    grupe.push({ naziv: null, stavke });
+  }
+
+  return { ...k, broj: stavke.length, grupe };
+});
+---
+
+<Layout
+  naslov="Proizvodi — 54 modela medicinske opreme"
+  opis="Kompletna ponuda BSP-a: 54 proizvoda u 12 kategorija — bolnički kreveti, stolice za dijalizu, pedijatrija, ginekologija, hirurgija i oprema za ordinacije."
+  aktivna="proizvodi"
+>
+  {/* ══════════════════════════ ZAGLAVLJE ══════════════════════════ */}
+  {/* Ova strana ne otvara herojem nego ULAZI U MREŽU. Pet strana je do sada
+      počinjalo istim potezom (veliki naslov, pa lead, pa sadržaj) — ovde je
+      posao korisnika da pronađe proizvod, pa naslov i broj stoje u jednom
+      redu i mreža počinje odmah ispod. */}
+  <section class="uvod uvod-ponuda">
+    <div class="shell" data-otkrij-grupa>
+      <p class="t-labela eyebrow istureno" data-otkrij>Katalog</p>
+
+      <div class="ponuda-red">
+        <h1 class="t-display naslov" data-otkrij data-maska>Ponuda</h1>
+        <p class="ponuda-broj" data-otkrij data-smer="x" aria-hidden="true">
+          <span class="t-mono ponuda-cifra">54</span>
+          <span class="t-labela-sm">proizvoda u 12 kategorija</span>
+        </p>
+      </div>
+
+      <div class="uvod-dno kol-2">
+        <p class="t-lead uvod-tekst" data-otkrij data-smer="mir">
+          Pedeset četiri proizvoda u dvanaest kategorija. Sve je polazna tačka — dimenzije,
+          funkcije, boje i dizajn prilagođavamo vašoj ustanovi.
+        </p>
+        <a href="/katalog" class="btn btn-ghost" data-otkrij>
+          Katalog u PDF-u
+          <svg class="strelica" width="16" height="10" viewBox="0 0 16 10" fill="none" aria-hidden="true">
+            <path d="M11 1L15 5L11 9M15 5H0" stroke="currentColor" stroke-width="1.4"></path>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  {/* ══════════════════════════ KATALOG ══════════════════════════ */}
+  <div class="shell katalog">
+    {/* Indeks */}
+    <nav class="indeks" aria-label="Kategorije proizvoda">
+      <div class="indeks-lepljivo">
+        <h2 class="t-labela indeks-naslov">Kategorije</h2>
+        <ol class="indeks-lista" data-lenis-prevent>
+          {
+            sekcije.map((s) => (
+              <li>
+                <a href={`#${s.slug}`} class="indeks-veza" data-indeks={s.slug}>
+                  <span class="indeks-tekst">{s.naziv}</span>
+                  <span class="t-mono-sm indeks-broj">{s.broj}</span>
+                </a>
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+    </nav>
+
+    {/* Sekcije */}
+    <div class="sadrzaj">
+      {
+        sekcije.map((s) => (
+          <section class="kat" id={s.slug} aria-labelledby={`${s.slug}-naslov`} data-sekcija={s.slug}>
+            {/* Kategorija je MESTO, ne podnaslov.
+
+                Prikazuje se tačno jedna kategorija, pa je ovo zapravo naslov
+                strane u tom trenutku — a stajao je u istoj veličini kao
+                bilo koji h2 na sajtu (izmereno 52px, glava 75px).
+
+                Preko CELOG EKRANA je PROBANO NA PAPIRU I ODBAČENO: prva
+                kartica je već na 0,73 ekrana (mobilni 0,80), pa bi je pun
+                ekran odgurao na ~1,7 — dva ekrana skrola pre ijednog
+                proizvoda, na strani čiji je jedini posao da se proizvod
+                nađe. Identitet se dobija razmerom i redom ispod crte, ne
+                praznim prostorom. */}
+            <header class="kat-glava">
+              <h2 class="kat-naslov" id={`${s.slug}-naslov`} data-otkrij data-maska>
+                {s.naziv}
+              </h2>
+              <p class="kat-meta" data-otkrij data-smer="x">
+                <span class="t-mono-sm kat-broj">
+                  {s.broj} {s.broj === 1 ? "proizvod" : "proizvoda"}
+                </span>
+                {s.grupe
+                  .map((g) => g.naziv)
+                  .filter(Boolean)
+                  .map((naziv) => (
+                    <span class="t-labela-sm kat-podkat">{naziv}</span>
+                  ))}
+              </p>
+            </header>
+
+            {s.grupe.map((g) => {
+              /* NIVO NASLOVA KARTICE ZAVISI OD TOGA IMA LI GRUPA IME.
+
+                 Kartica je ranije uvek bila `h4`, a naslov podkategorije
+                 `h3` se renderovao samo kad grupa ima ime. Kod grupa bez
+                 imena red je bio h2 → h4: izmereno **8 preskoka nivoa** na
+                 ovoj strani (ostalih šest strana ima 0). Čitač ekrana to
+                 čita kao da nedostaje ceo odeljak.
+
+                 Sada: ima imena → h3 podkategorija, h4 kartice; nema imena
+                 → kartice idu pravo pod h2 kategorije, kao h3. */
+              const NivoKartice = g.naziv ? "h4" : "h3";
+              return (
+              <div class="grupa">
+                {g.naziv && <h3 class="t-labela grupa-naslov">{g.naziv}</h3>}
+                <ul class="mreza" data-lampa>
+                  {g.stavke.map((p) => {
+                    const slika = glavnaSlika(p.slug);
+                    return (
+                      <li class="kartica">
+                        <a href={`/proizvodi/${p.slug}`} class="kartica-veza">
+                          <div class="kartica-vizual svetlo">
+                            {/* Ime prelaza spaja karticu sa stranom proizvoda:
+                                fotografija i oznaka putuju iz mreže na stranu
+                                umesto da se strana prebaci. Ime mora biti
+                                jedinstveno na strani — otud slug.
+
+                                IME SE POSTAVLJA KROZ `style`, NE KROZ
+                                `transition:name`. Astro za svaku direktivu
+                                `transition:name` emituje SOPSTVENI ugrađeni
+                                `<style>` blok od ~2,3 KB sa punim skupom
+                                pravila za prelaz. Na ovoj strani je 54
+                                kartice × 2 imena = 108 blokova, ukupno
+                                **255 KB CSS-a u HTML-u** (spoljni CSS je
+                                svega 38 KB).
+
+                                A ta pravila ne rade ništa: `global.css` već
+                                definiše `::view-transition-group(*)`,
+                                `old(*)` i `new(*)` sa trajanjima sajta, i
+                                pošto su neslojevita, nadjačavaju Astro-va
+                                pravila u `@layer astro`. Dakle 255 KB se
+                                parsira pa odbaci.
+
+                                `view-transition-name` kroz `style` daje
+                                identično ponašanje bez ijednog bloka. */}
+                            {slika ? (
+                              <Image
+                                src={slika}
+                                alt={p.naziv}
+                                widths={[300, 480]}
+                                sizes="(min-width: 1000px) 24vw, 45vw"
+                                loading="lazy"
+                                class="kartica-slika"
+                                style={`view-transition-name: slika-${p.slug}`}
+                              />
+                            ) : (
+                              <SlikaProizvoda sifra={p.sifra} naziv={p.naziv} />
+                            )}
+                          </div>
+                          <div class="kartica-tekst">
+                            <NivoKartice
+                              class="kartica-oznaka"
+                              style={`view-transition-name: oznaka-${p.slug}`}
+                            >
+                              {p.sifra}
+                            </NivoKartice>
+                            <p class="kartica-tip">{tipProizvoda(p.naziv)}</p>
+                          </div>
+                        </a>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+              );
+            })}
+          </section>
+        ))
+      }
+    </div>
+  </div>
+
+  {/* ══════════════════════════ POZIV ══════════════════════════ */}
+  {/* Traka, ne blok. Na strani sa 54 proizvoda zatvaranje ne treba da bude
+      još jedna sekcija iste težine — dovoljno je da postoji izlaz. */}
+  {/* Tamno poglavlje ove strane. Posle 54 svetle kartice, pitanje „ne vidite
+      ono što vam treba?" mora da promeni ton, inače je samo još jedan red. */}
+  <section class="traka-upit poglavlje-tamno">
+    <div class="shell traka-unutra">
+      <p class="traka-tekst">
+        Kataloške oznake su polazna tačka. Pošaljite dimenzije i funkcije koje tražite.
+      </p>
+      <div class="traka-akcije">
+        <a href="/kontakt" class="btn btn-primary">
+          Pišite nam
+          <svg class="strelica" width="16" height="10" viewBox="0 0 16 10" fill="none" aria-hidden="true">
+            <path d="M11 1L15 5L11 9M15 5H0" stroke="currentColor" stroke-width="1.4"></path>
+          </svg>
+        </a>
+        <a href="tel:+38113348844" class="t-mono traka-tel">013 348844</a>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  /* ── Zatvaranje: traka ───────────────────────────────────────────────── */
+  /* Ranije je ovo bila TANKA TRAKA, namerno — posle 54 kartice zatvaranje
+     nije trebalo da bude još jedna teška sekcija. Otkad je tamno poglavlje
+     ove strane, račun je drugačiji: ono je tonalno sidro i mora da zauzme
+     prostor. Visinu nosi `.poglavlje-tamno`. */
+  .traka-upit {
+    margin-top: clamp(3.5rem, 7vw, 6rem);
+  }
+
+  .traka-upit .traka-unutra {
+    padding-block: clamp(2rem, 4vw, 3rem);
+  }
+
+  .traka-unutra {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: clamp(1rem, 3vw, 2.5rem);
+    padding-block: clamp(1.25rem, 2.5vw, 1.75rem);
+  }
+
+  .traka-tekst {
+    margin: 0;
+    max-width: 46ch;
+    color: var(--color-siva);
+  }
+
+  .traka-akcije {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  .traka-tel {
+    color: var(--color-plava);
+  }
+
+  .uvod {
+    padding-top: clamp(7.5rem, 13vw, 11rem);
+    padding-bottom: clamp(2.5rem, 5vw, 4rem);
+  }
+
+  /* Sažetije od ostalih strana — mreža treba da počne što pre. */
+  .uvod-ponuda {
+    padding-top: clamp(6rem, 10vw, 8.5rem);
+    padding-bottom: clamp(1.5rem, 3vw, 2.5rem);
+  }
+
+  .ponuda-red {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: clamp(1.25rem, 4vw, 3rem);
+  }
+
+  .ponuda-broj {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    margin: 0;
+  }
+
+  .ponuda-cifra {
+    font-size: clamp(1.5rem, 3vw, 2.25rem);
+    color: var(--color-zelena);
+    letter-spacing: -0.02em;
+  }
+
+  .eyebrow {
+    color: var(--color-siva);
+    margin-bottom: clamp(1.25rem, 2.5vw, 2rem);
+  }
+
+  .naslov {
+    margin-bottom: clamp(2rem, 4vw, 3rem);
+  }
+
+  .uvod-dno {
+    display: grid;
+    gap: 2rem;
+    padding-top: clamp(1.75rem, 3vw, 2.5rem);
+    border-top: 1px solid var(--color-ivica);
+  }
+
+  .uvod-tekst {
+    max-width: 50ch;
+  }
+
+  .uvod-dno .btn {
+    justify-self: start;
+  }
+
+  /* ───────────────── Raspored kataloga ───────────────── */
+  /* `.svetlo::before` na kartici se širi 18% van nje. Na jednokolonskoj
+     mreži (390px) to daje kadar od −43px do 433px, tj. 43px vodoravnog
+     prelivanja strane — izmereno. Pseudo-element `querySelectorAll` ne
+     vidi, pa se kvar nalazi samo merenjem `scrollWidth`-a.
+     `clip`, ne `hidden`: ne pravi scroll kontejner, pa lepljivi indeks radi. */
+  .katalog {
+    overflow-x: clip;
+
+    display: grid;
+    gap: clamp(2.5rem, 5vw, 4.5rem);
+    padding-bottom: clamp(4rem, 8vw, 7rem);
+  }
+
+  /* Bez ovoga se ispod 1000px cela mreža razvlači.
+     Grid stavka ima min-width: auto, a indeks je tada horizontalna traka sa
+     nowrap čipovima — pa se kolona širi na zbir svih 12 čipova (~1980px) i
+     vuče kartice sa sobom. */
+  .katalog > * {
+    min-width: 0;
+  }
+
+  .indeks-naslov {
+    color: var(--color-siva);
+    margin-bottom: 1rem;
+  }
+
+  .indeks-lista {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 0.5rem;
+  }
+
+  .indeks-lista::-webkit-scrollbar {
+    display: none;
+  }
+
+  .indeks-veza {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    white-space: nowrap;
+    padding: 0.55rem 0.85rem;
+    border: 1px solid var(--color-ivica);
+    background: var(--color-bela);
+    font-size: 0.875rem;
+    color: var(--color-siva);
+    transition:
+      color 0.45s var(--ease-sala),
+      border-color 0.45s var(--ease-sala);
+  }
+
+  .indeks-veza:hover,
+  .indeks-veza[data-tekuca] {
+    color: var(--color-celik);
+    border-color: var(--color-celik);
+  }
+
+  .indeks-broj {
+    opacity: 0.6;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ───────────────── Sekcije ───────────────── */
+  .sadrzaj {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(4rem, 8vw, 7rem);
+  }
+
+  .kat {
+    scroll-margin-top: 120px;
+  }
+
+  .kat-glava {
+    margin-bottom: clamp(2rem, 4vw, 3rem);
+  }
+
+  /* Između display skale (44–112) i naslovne (30–52) namerno NEMA međukoraka
+     u sistemu. Ovde je potreban, i to je svesno odstupanje: kategorija je
+     naslov strane u tom trenutku, ali strana već ima h1 „Ponuda" — dve pune
+     display vrednosti bi se tukle. Zato gornja granica staje ispod h1. */
+  .kat-naslov {
+    margin: 0 0 clamp(0.85rem, 1.6vw, 1.15rem);
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+    font-size: clamp(2.25rem, 4.6vw, 4rem);
+    font-weight: 600;
+    line-height: 1.02;
+    letter-spacing: -0.028em;
+    text-wrap: balance;
+  }
+
+  /* Red ispod crte: koliko ih ima i ŠTA je unutra. Podkategorije su ionako
+     naslovi grupa niže na strani — ovde služe kao pregled pre skrola. */
+  .kat-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1.1rem;
+    margin: 0;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--color-celik);
+  }
+
+  .kat-glava .kat-broj {
+    color: var(--color-siva);
+  }
+
+  /* Podkategorija nosi zelenu — ona je oznaka, ne radnja (CLAUDE.md, uloge
+     boja). Tačka razdvaja bez još jedne linije u kadru. */
+  .kat-podkat {
+    color: var(--color-zelena);
+  }
+
+  .kat-podkat::before {
+    content: "·";
+    margin-inline-end: 1.1rem;
+    color: var(--color-ivica);
+  }
+
+  .grupa + .grupa {
+    margin-top: clamp(2.5rem, 5vw, 4rem);
+  }
+
+  .grupa-naslov {
+    color: var(--color-zelena);
+    margin: 0 0 1.5rem;
+  }
+
+  /* Jedna lampa nad celom mrežom umesto 54 zasebna svetla — potpis pravca
+     postaje sistem. Prati pokazivač, gasi se kad izađe. */
+  .mreza {
+    position: relative;
+    isolation: isolate;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: clamp(2rem, 4vw, 3.25rem) clamp(1.5rem, 2.5vw, 2.5rem);
+  }
+
+  .mreza::before {
+    content: "";
+    position: absolute;
+    inset: -4%;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0;
+    background: radial-gradient(
+      420px 420px at var(--mx, 50%) var(--my, 50%),
+      var(--color-bela) 0%,
+      color-mix(in oklab, var(--color-bela) 55%, transparent) 42%,
+      transparent 70%
+    );
+    transition: opacity 0.7s var(--ease-sala);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .mreza[data-lampa-ukljucena]::before {
+      opacity: 1;
+    }
+  }
+
+  .kartica {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .kartica-veza {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  /* Odnos 5:3 je odnos originalnih fotografija; `contain` čuva i onih 32
+     uspravne slike od izobličenja. */
+  .kartica-slika {
+    width: 100%;
+    aspect-ratio: 5 / 3;
+    object-fit: contain;
+  }
+
+  /* Bazen svetla i kontaktna senka pripadaju SLICI, ne celoj kartici.
+     Sa kartice bi senka pala preko naziva ispod — računa se od dna
+     elementa na kome stoji. Unutrašnji razmak joj daje mesta. */
+  .kartica-vizual {
+    padding-block: clamp(0.5rem, 1.5vw, 1rem);
+    transition: transform 0.7s var(--ease-sala);
+  }
+
+  .kartica:hover .kartica-vizual {
+    transform: translateY(-6px) scale(1.015);
+  }
+
+  .kartica-tekst {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--color-ivica);
+  }
+
+  /* Oznaka nosi karticu — tako je u industrijskim katalozima.
+     Tip proizvoda je podnaslov, ne obrnuto. */
+  .kartica-oznaka {
+    margin: 0;
+    font-size: clamp(1.375rem, 2vw, 1.75rem);
+    font-weight: 500;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    font-variant-numeric: tabular-nums;
+    transition: color 0.3s var(--ease-sala);
+  }
+
+  .kartica:hover .kartica-oznaka {
+    color: var(--color-plava);
+  }
+
+  .kartica-tip {
+    margin: 0;
+    color: var(--color-siva);
+    font-size: 0.8125rem;
+    line-height: 1.45;
+  }
+
+  /* ───────────────── Poziv ───────────────── */
+  .poziv {
+    border-top: 1px solid var(--color-ivica);
+  }
+
+  .poziv-unutra {
+    display: grid;
+    gap: clamp(2rem, 4vw, 4rem);
+  }
+
+  .poziv-desno {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+    max-width: 44ch;
+  }
+
+  .poziv-akcije {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .poziv-tel {
+    color: var(--color-plava);
+  }
+
+  /* Na jednoj koloni „dve kolone" ne postoje, pa nosilac grupe dobija VIŠI
+     kadar umesto šireg — ista uloga (grupa ima proizvod koji je predstavlja),
+     drugo sredstvo. Bez ovoga je mobilni gubio i taj potez. */
+  @media (max-width: 619px) {
+    .mreza:has(> .kartica:nth-child(3)) > .kartica:first-child .kartica-vizual :global(.okvir),
+    .mreza:has(> .kartica:nth-child(3)) > .kartica:first-child .kartica-vizual :global(.kadar) {
+      aspect-ratio: 4 / 3;
+    }
+
+    .mreza:has(> .kartica:nth-child(3)) > .kartica:first-child .kartica-oznaka {
+      font-size: var(--text-h3);
+    }
+  }
+
+  /* ───────────────── Breakpointi ───────────────── */
+  @media (min-width: 620px) {
+    .mreza {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .uvod-dno {
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 3rem;
+    }
+  }
+
+  @media (min-width: 1000px) {
+    .katalog {
+      grid-template-columns: 224px 1fr;
+      gap: clamp(3rem, 5vw, 5rem);
+      align-items: start;
+    }
+
+    .indeks-lepljivo {
+      position: sticky;
+      top: 128px;
+    }
+
+    .indeks-lista {
+      flex-direction: column;
+      gap: 0;
+      overflow: visible;
+      border-top: 1px solid var(--color-ivica);
+    }
+
+    .indeks-veza {
+      justify-content: space-between;
+      border: 0;
+      border-bottom: 1px solid var(--color-ivica);
+      background: none;
+      padding: 0.6rem 0;
+      font-size: 0.8125rem;
+    }
+
+    .indeks-veza:hover,
+    .indeks-veza[data-tekuca] {
+      color: var(--color-plava);
+      border-color: var(--color-ivica);
+    }
+
+    .mreza {
+      grid-template-columns: repeat(3, 1fr);
+      align-items: start;
+    }
+
+    /* ── NOSILAC GRUPE ────────────────────────────────────────────────
+       Prva kartica u podkategoriji zauzima dve kolone. Pedeset četiri
+       kartice iste veličine čitale su se kao tabela, a ne kao ponuda —
+       svaka grupa sada ima proizvod koji je predstavlja.
+
+       `:has(> .kartica:nth-child(3))` je zaštita: potez se pali samo kad
+       grupa ima bar tri stavke. U grupi od jedne ili dve bi jedna dupla
+       kartica izgledala kao greška u rasporedu, ne kao naglasak.
+
+       Kadar je ŠIRI (16:7), ne veći: `object-fit: contain` ne seče, pa
+       proizvod ostaje ceo i samo dobija više prostora — izmereno ~1,5×
+       veći prikaz nego u običnoj kartici, uz red koji ostaje razumne visine. */
+    .mreza:has(> .kartica:nth-child(3)) > .kartica:first-child {
+      grid-column: span 2;
+    }
+
+    .mreza:has(> .kartica:nth-child(3)) > .kartica:first-child .kartica-vizual :global(.okvir),
+    .mreza:has(> .kartica:nth-child(3)) > .kartica:first-child .kartica-vizual :global(.kadar) {
+      aspect-ratio: 16 / 7;
+    }
+
+    .mreza:has(> .kartica:nth-child(3)) > .kartica:first-child .kartica-oznaka {
+      font-size: var(--text-h3);
+    }
+
+    .poziv-unutra {
+      grid-template-columns: 1fr 1fr;
+      align-items: start;
+    }
+  }
+
+  @media (min-width: 1400px) {
+    .katalog {
+      grid-template-columns: 260px 1fr;
+    }
+  }
+</style>
+
+<script>
+  import gsap from "gsap";
+  import { naSvakojStrani } from "../scripts/zivot";
+
+  /* Telo strane se menja bez novog učitavanja (View Transitions), pa se
+     ovo mora pokrenuti iznova na svakom prikazu. Vraćeni čistač skida
+     ono što nadživi telo — osluškivače na window/document i posmatrače. */
+  naSvakojStrani(() => {
+
+
+    /**
+     * Lampa nad mrežom. Pozicija se piše u CSS promenljive, a crtanje radi
+     * `radial-gradient` — nema layouta ni rasporeda po pomeraju pokazivača.
+     */
+    {
+      const mreze = [...document.querySelectorAll<HTMLElement>("[data-lampa]")];
+      const finPokazivac = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+      if (finPokazivac) {
+        for (const mreza of mreze) {
+          let ceka = false;
+
+          mreza.addEventListener("pointermove", (e) => {
+            if (e.pointerType !== "mouse" || ceka) return;
+            ceka = true;
+            requestAnimationFrame(() => {
+              const r = mreza.getBoundingClientRect();
+              mreza.style.setProperty("--mx", `${((e.clientX - r.left) / r.width) * 100}%`);
+              mreza.style.setProperty("--my", `${((e.clientY - r.top) / r.height) * 100}%`);
+              ceka = false;
+            });
+          });
+
+          mreza.addEventListener("pointerenter", (e) => {
+            if (e.pointerType === "mouse") mreza.setAttribute("data-lampa-ukljucena", "");
+          });
+          mreza.addEventListener("pointerleave", () => {
+            mreza.removeAttribute("data-lampa-ukljucena");
+          });
+        }
+      }
+    }
+
+    /**
+     * Katalog prikazuje jednu kategoriju u jednom trenutku.
+     *
+     * Progresivno: server renderuje SVE sekcije vidljive, pa ih JS sakrije osim
+     * tekuće. Bez JS-a strana i dalje radi — duža je, ali kompletna, i sidra
+     * (#hirurgija) i dalje vode gde treba.
+     */
+    // Deklarisano izvan bloka da ga čistač na dnu vidi.
+    let naHash: (() => void) | null = null;
+
+    const sekcije = [...document.querySelectorAll<HTMLElement>("[data-sekcija]")];
+    const veze = [...document.querySelectorAll<HTMLElement>("[data-indeks]")];
+    const tiho = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (sekcije.length && veze.length) {
+      let tekuca = "";
+
+      const izHasha = () => {
+        const podrazumevana = sekcije[0].dataset.sekcija!;
+        let h: string;
+        try {
+          /* `decodeURIComponent` BACA na nevalidnom procentu. Adresa
+             `/proizvodi#%` (pokvaren link, greška pri kopiranju, loš
+             skraćivač) rušila je celu skriptu strane pre nego što bilo
+             šta uradi — posledica je bila da svih 12 kategorija ostane
+             otvoreno odjednom (3.052px -> ~12.500px), a prebacivanje
+             kategorija, aktivna stavka u indeksu i lampa prestanu da rade.
+
+             Hash dolazi spolja i nikad mu se ne veruje. */
+          h = decodeURIComponent(location.hash.replace(/^#/, ""));
+        } catch {
+          return podrazumevana;
+        }
+        return sekcije.some((s) => s.dataset.sekcija === h) ? h : podrazumevana;
+      };
+
+      const prikazi = (slug: string, pomeriPogled: boolean) => {
+        if (slug === tekuca) return;
+        const cilj = sekcije.find((s) => s.dataset.sekcija === slug);
+        if (!cilj) return;
+
+        sekcije.forEach((s) => {
+          s.hidden = s !== cilj;
+        });
+        tekuca = slug;
+
+        veze.forEach((v) => {
+          const jeste = v.dataset.indeks === slug;
+          v.toggleAttribute("data-tekuca", jeste);
+          v.setAttribute("aria-current", jeste ? "true" : "false");
+        });
+
+        if (!tiho) {
+          const kartice = cilj.querySelectorAll(".kartica");
+          gsap.fromTo(
+            cilj.querySelectorAll(".kat-glava, .grupa-naslov"),
+            { opacity: 0, y: 12 },
+            { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" },
+          );
+          gsap.fromTo(
+            kartice,
+            { opacity: 0, y: 16 },
+            { opacity: 1, y: 0, duration: 0.55, ease: "power2.out", stagger: 0.035, delay: 0.05 },
+          );
+        }
+
+        if (pomeriPogled) {
+          const vrh = document.querySelector<HTMLElement>(".katalog");
+          if (vrh) {
+            const y = Math.max(0, vrh.getBoundingClientRect().top + window.scrollY - 104);
+            // Kroz Lenis kad je aktivan — nativni smooth bi se borio sa njim.
+            if (window.__lenis && !tiho) window.__lenis.scrollTo(y);
+            else window.scrollTo({ top: y, behavior: "auto" });
+          }
+        }
+      };
+
+      veze.forEach((v) => {
+        v.addEventListener("click", (e) => {
+          const slug = v.dataset.indeks;
+          if (!slug) return;
+          e.preventDefault();
+          history.replaceState(null, "", `#${slug}`);
+          prikazi(slug, true);
+        });
+      });
+
+      naHash = () => prikazi(izHasha(), true);
+      window.addEventListener("hashchange", naHash);
+
+      // Prvo prikazivanje: bez animacije i bez skoka pogleda.
+      const prva = izHasha();
+      sekcije.forEach((s) => {
+        s.hidden = s.dataset.sekcija !== prva;
+      });
+      tekuca = prva;
+      veze.forEach((v) => {
+        const jeste = v.dataset.indeks === prva;
+        v.toggleAttribute("data-tekuca", jeste);
+        v.setAttribute("aria-current", jeste ? "true" : "false");
+      });
+    }
+
+    return () => {
+      if (naHash) window.removeEventListener("hashchange", naHash);
+    };
+  });
+</script>

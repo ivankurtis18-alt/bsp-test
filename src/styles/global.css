@@ -1,0 +1,1114 @@
+@import "./fontovi.css";
+@import "tailwindcss";
+
+/* ============================================================
+   BSP — dizajn tokeni. Pravac "Sala".
+   Izvor istine za sve vrednosti: CLAUDE.md, sekcija 4.
+   ============================================================ */
+@theme {
+  --color-sala: #f4f6f7;
+  --color-bela: #ffffff;
+  --color-celik: #0d1b22;
+  --color-siva: #5c6e77;
+  --color-ivica: #e3e8ea;
+  --color-plava: #0e6fb4;
+  --color-plava-signal: #1890d7;
+  /* Hirurška zelena — boja tekstila u operacionoj sali. Uloga, ne ukras:
+     plava je SAMO ono što se klikne, zelena označava potvrdu i meru
+     (ISO standardi, naslovi specifikacija, koraci procesa). */
+  --color-zelena: #2f6f5e;
+
+  /* Stanje pritiska. Nije nova boja nego ČELIK — ista ona od koje je
+     sagrađen ostatak sajta.
+
+     Ranije je hover vodio u zelenu. Izmereno: plava i zelena imaju odnos
+     svetlina 1,11 i razliku svetline od 7 poena, ali razliku tona od 41°.
+     Promena TONA pri istoj vrednosti oko čita kao ZAMENU predmeta, a ne kao
+     promenu stanja — otud utisak da se dugme prevrnulo u nešto drugo.
+     Promena VREDNOSTI se čita kao stanje. Zato hover sada ponire.
+
+     Uz to je zelena time prestala da laže: pravilo kaže da znači POTVRDU,
+     a pojavljivala se u trenutku kad još ništa nije potvrđeno. */
+  --color-pritisnuto: #0d1b22;
+
+  /* TRI PISMA, TRI ULOGE — ne tri ukusa.
+
+     `--font-display` je jedina izmena u odnosu na raniji sistem, i uvedena je
+     zato što je sajt imao sređenu skalu ali nijedan glas: Archivo je
+     kompetentan neogrotesk bez ijednog karakterističnog reza.
+
+     Bricolage Grotesque ima varijabilnu `opsz` osu (12–96). To znači da
+     naslov na 120px dobija STVARNO dizajnirane display forme — uže apoene,
+     tešnji razmak, ink trap — a ne uvećan tekstualni rez. To je razlika koju
+     profesionalac primeti, a koju skaliranje jednog reza nikad ne daje.
+
+     Ostaje u porodici groteska, pa ne ruši sistem kao što bi serif. */
+  --font-display: "Bricolage Grotesque", "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Archivo", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  /* PET VELIČINA, sa stvarnim skokovima.
+
+     Izmereno pre izmene, na početnoj: 108 · 68 · 52 · 24 · 21 · 17 · 16 · 15
+     · 12 · 11. Vrh je bio dobar, ali je sredina bila PET veličina u pojasu od
+     devet piksela — to nije hijerarhija nego kaša. Sada:
+
+       display 44–112   naslov 30–52   istaknuto 22–28   telo 17   labela 12
+
+     Odnosi su 2,2× / 1,9× / 1,6× — svaki korak se vidi. Ako nekom elementu
+     treba veličina između, greška je u hijerarhiji, ne u skali. */
+  --text-display: clamp(2.75rem, 7.5vw, 7rem);
+  --text-h2: clamp(1.875rem, 4vw, 3.25rem);
+  --text-h3: clamp(1.375rem, 1.9vw, 1.75rem);
+  --text-lead: clamp(1.0625rem, 1.15vw, 1.1875rem);
+
+  /* TRI KRIVE, TRI ULOGE — ne tri ukusa.
+
+     Izmereno pre izmene: `--ease-sala` je korišćena 53 puta, a sve ostale
+     krive zajedno ~19. Kad je sve meko i sporo, ništa nije meko i sporo —
+     nestaje kontrast. Nijedan element nije delovao teško, nijedan hitro.
+
+       --ease-dolazak   ono što STIŽE: otkrivanje, ulazak, parallax.
+                        Brzo krene, dugo se smiruje. (raniji `--ease-sala`)
+       --ease-instrument  ono što se OTVARA I ZATVARA: maske, clip-path,
+                        kadar, panel. Simetrična — pokret ima i početak i
+                        kraj, kao blenda.
+       --ease-sprava    ono što se PRITISKA: dugmad, prekidači, hover.
+                        Kratko i tvrdo staje — sprava ne lebdi.
+
+     `--ease-sala` ostaje kao alias da se ne razbije 53 mesta odjednom;
+     nova imena se koriste tamo gde je uloga jasna. */
+  --ease-dolazak: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-instrument: cubic-bezier(0.62, 0.01, 0.2, 1);
+  --ease-sprava: cubic-bezier(0.3, 0.75, 0.1, 1);
+  --ease-sala: var(--ease-dolazak);
+}
+
+/* ============================================================
+   Baza
+   ============================================================ */
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    /* Bazen svetla (`.svetlo::before`) se širi 18% van svog elementa i na
+       uskim ekranima izlazi iz okvira. Seče se ovde, na korenu:
+       `overflow-x` na `body` se propagira na viewport pa telo zapravo ne
+       seče, a `clip` (za razliku od `hidden`) ne pravi scroll kontejner pa
+       `position: sticky` nastavlja da radi. */
+    overflow-x: clip;
+    /* Bez `scroll-behavior: smooth` — glatki skrol vozi Lenis, a nativni
+       bi mu se suprotstavljao na sidrima. */
+    /* Navodnici i crtice vise izvan bloka teksta umesto da uvlače prvi red.
+       Danas radi samo u Safariju; drugde je bezopasno. */
+    hanging-punctuation: first last;
+  }
+
+  body {
+    background-color: var(--color-sala);
+    color: var(--color-celik);
+    font-family: var(--font-sans);
+    font-size: 17px;
+    line-height: 1.65;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* ── Prelamanje reči ──────────────────────────────────────────
+     `lang="sr"` stoji na <html>, pa pregledač koristi srpske obrasce
+     prelamanja. Granice su namerno konzervativne: reč mora imati bar 7
+     slova, najmanje 4 ostaju u prvom redu, 3 prelaze u sledeći — tako se
+     izbegavaju ružni prelomi od dva slova. Ako pregledač nema rečnik za
+     srpski, ništa se ne dešava.
+     Naslovi se NIKAD ne prelamaju crticom. */
+  p,
+  li,
+  dd,
+  address,
+  figcaption,
+  blockquote {
+    hyphens: auto;
+    -webkit-hyphens: auto;
+    hyphenate-limit-chars: 7 4 3;
+    text-wrap: pretty;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  legend,
+  label,
+  button,
+  .t-display,
+  .t-h2,
+  .t-h3,
+  .t-labela,
+  .t-mono,
+  .t-mono-sm,
+  .btn {
+    hyphens: manual;
+    -webkit-hyphens: manual;
+  }
+
+  ::selection {
+    background: var(--color-plava);
+    color: #fff;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-plava);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  button,
+  a,
+  [role="button"] {
+    cursor: pointer;
+  }
+
+  img,
+  svg {
+    display: block;
+    max-width: 100%;
+  }
+}
+
+/* ============================================================
+   Tipografske uloge
+   ============================================================ */
+@layer components {
+  .t-display {
+    font-family: var(--font-display);
+    /* Bez ovoga `opsz` osa ne radi i naslov je samo uvećan tekstualni rez. */
+    font-optical-sizing: auto;
+    font-size: var(--text-display);
+    font-weight: 600;
+    line-height: 0.94;
+    letter-spacing: -0.035em;
+    text-wrap: balance;
+  }
+
+  .t-h2 {
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+    font-size: var(--text-h2);
+    font-weight: 600;
+    line-height: 1.04;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+  }
+
+  .t-h3 {
+    font-size: var(--text-h3);
+    font-weight: 500;
+    line-height: 1.25;
+    letter-spacing: -0.012em;
+  }
+
+  .t-lead {
+    font-size: var(--text-lead);
+    line-height: 1.55;
+    color: var(--color-siva);
+    text-wrap: pretty;
+  }
+
+  /* Mono labela — kataloške šifre, eyebrow, mala navigacija.
+
+     `margin-inline-end` poništava razmak koji `letter-spacing` dodaje IZA
+     poslednjeg slova. Bez toga labela poravnata udesno vizuelno visi ulevo
+     za jedan razmak u odnosu na tekst ispod nje. Levo poravnate ostaju iste. */
+  .t-mono {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    line-height: 1.4;
+    font-variant-numeric: tabular-nums;
+    margin-inline-end: -0.12em;
+  }
+
+  /* LABELA U OSNOVNOM PISMU.
+
+     Mono je bio brojniji od Archiva (57 : 51 elemenata na početnoj) i time
+     prestao da bude akcenat — postao je tekstura. Kad je sve „tehničko",
+     ništa nije tehničko.
+
+     Podela je sada stroga:
+       `.t-labela`  — IMENA (uloge, kategorije, nazivi boja, nadnaslovi)
+       `.t-mono`    — VREDNOSTI koje se čitaju mašinski: kataloške oznake,
+                      RAL brojevi, kote, telefon, redni brojevi */
+  .t-labela {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: 0.085em;
+    text-transform: uppercase;
+    line-height: 1.4;
+    /* Ista optička korekcija kao kod mono labele: `letter-spacing` dodaje
+       razmak i IZA poslednjeg slova, pa desno poravnata labela vizuelno visi. */
+    margin-inline-end: -0.085em;
+  }
+
+  .t-labela-sm {
+    font-size: 0.75rem;
+    font-weight: 400;
+    letter-spacing: 0.055em;
+    line-height: 1.5;
+    color: var(--color-siva);
+  }
+
+  /* Ista sitna veličina kao `.t-labela-sm`: tri sitne veličine (11/12/13)
+     su bile jedna previše i nijedna se nije čitala kao korak. */
+  .t-mono-sm {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    line-height: 1.4;
+    font-variant-numeric: tabular-nums;
+    margin-inline-end: -0.14em;
+  }
+
+  /* ----------------------------------------------------------
+     Raster. Jedan .section, bez element-selektora koji ga gaze.
+     ---------------------------------------------------------- */
+  .shell {
+    width: 100%;
+    max-width: 1560px;
+    margin-inline: auto;
+    padding-inline: clamp(1.25rem, 5vw, 5rem);
+  }
+
+  /* Razmak sekcija.
+     Vrednost je po JEDNOJ strani — kad se dve sekcije nadovežu, vizuelni
+     razmak je dvostruk. Zato je ovde ~86px, a ne ~158px: spoj tada ispadne
+     ~172px, što je i dalje prostrano za pravac "Sala", ali ne deluje kao rupa. */
+  .section {
+    padding-block: clamp(3.5rem, 6vw, 5.5rem);
+  }
+
+  .section-tight {
+    padding-block: clamp(2.75rem, 4.5vw, 4rem);
+  }
+
+  /* RAZMAK PO TEŽINI.
+
+     Izmereno pre izmene: svaka `.section` je imala 86,4px gore i dole, svaka
+     `.section-tight` 64/64 — sekcija od 2.170px i sekcija od 282px dobijale
+     su identično vazduha. To je otkucaj, ne ritam.
+
+     Dva modifikatora prave disanje:
+
+       .section-glasna  mnogo vazduha PRE, skoro nimalo POSLE. Sekcija se
+                        najavi tišinom, a sledeća stigne prebrzo — to je
+                        napetost, i namerna je.
+       .section-uz      stisnuta uz prethodnu, pun razmak posle. Čita se kao
+                        nastavak, a ne kao nova tema.
+
+     Pravilo: najviše jedna `.section-glasna` po strani. Kad ih je dve,
+     nijedna nije glasna. */
+  .section-glasna {
+    padding-block: clamp(6rem, 11vw, 10rem) clamp(1.25rem, 2vw, 2rem);
+  }
+
+  .section-uz {
+    padding-block: clamp(1.25rem, 2vw, 2rem) clamp(3.5rem, 6vw, 5.5rem);
+  }
+
+  /* Sadržaj koji postoji za čitače ekrana, ali ne i za oko. Koristi se tamo
+     gde je podatak nacrtan kao konstrukcija (npr. godina na `/o-nama`). */
+  /* ============================================================
+     TRI ARHETIPA ZAGLAVLJA
+
+     Izmereno pre uvođenja: JEDANAEST sekcija se predstavljalo istim
+     potezom — mono nadnaslov, veliki h2, lead pasus desno. „Izbliza",
+     „Saradnja", „Boje i materijali", „Šta znače naši sertifikati",
+     „Lokacija" — sve su najavljivale sebe identično, pa su sekcije
+     postale zamenljive.
+
+     Sada postoje tri, i sekcija bira po ULOZI:
+
+       A · .zaglavlje-brojka    figura JESTE naslov. Za sekcije koje
+                                definiše količina ili oznaka.
+       B · .zaglavlje-recenica  jedna duga rečenica u naslovnoj veličini,
+                                bez nadnaslova. Za sekcije koje nešto tvrde.
+       C · .zaglavlje-labela    samo labela, bez h2. Za sekcije koje
+                                služe, a ne govore.
+
+     PRAVILO: najviše dva istog arhetipa po strani. Kad ih je više,
+     arhetip prestaje da bude razlika i vraćamo se na početak.
+     ============================================================ */
+
+  /* A — figura vodi */
+  .zaglavlje-brojka {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: clamp(1rem, 2.5vw, 2rem);
+    margin-block: 0 clamp(2rem, 4vw, 3.25rem);
+  }
+
+  .zaglavlje-brojka .figura {
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+    font-size: clamp(3.5rem, 9vw, 8rem);
+    font-weight: 600;
+    line-height: 0.85;
+    letter-spacing: -0.045em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .zaglavlje-brojka .uz-figuru {
+    max-width: 30ch;
+    color: var(--color-siva);
+  }
+
+  /* B — rečenica vodi */
+  .zaglavlje-recenica {
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+    margin-block: 0 clamp(2rem, 4vw, 3.25rem);
+    font-size: var(--text-h2);
+    font-weight: 600;
+    line-height: 1.06;
+    letter-spacing: -0.025em;
+    max-width: 22ch;
+    text-wrap: balance;
+  }
+
+  /* Drugi deo rečenice se povlači — tvrdnja ostaje u punom tonu, okolnosti
+     idu u sivo. Jedan blok, dve težine, bez drugog elementa. */
+  .zaglavlje-recenica .tiho {
+    color: var(--color-siva);
+  }
+
+  /* C — labela vodi */
+  .zaglavlje-labela {
+    margin-block: 0 clamp(1.25rem, 2.5vw, 2rem);
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--color-celik);
+    color: var(--color-celik);
+  }
+
+  .vizuelno-skriveno {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .hairline {
+    border-top: 1px solid var(--color-ivica);
+  }
+
+  /* ----------------------------------------------------------
+     Svetlosni sto — potpis pravca "Sala".
+     Proizvod pluta u mekom bazenu svetla.
+     ---------------------------------------------------------- */
+  .svetlo {
+    position: relative;
+    isolation: isolate;
+  }
+
+  /* Kartica u katalogu: svetlo miruje prigušeno i pojača se na hover.
+
+     Kartice NEMAJU `data-svetlo` — scrub bi upisivao `--svetlo-jacina` kao
+     inline stil i hover ga nikad ne bi nadjačao. Uz to je 54 ScrollTrigger-a
+     na jednoj strani nepotreban trošak; scrub ostaje samo na herou. */
+  .kartica .svetlo {
+    --svetlo-jacina: 0.5;
+  }
+
+  .kartica:hover .svetlo,
+  .kartica:focus-within .svetlo {
+    --svetlo-jacina: 1;
+    --svetlo-y: 40%;
+  }
+
+  /* Bazen svetla iza predmeta. */
+  .svetlo::before {
+    content: "";
+    position: absolute;
+    inset: -18%;
+    z-index: -2;
+    /* Ukras nikad ne sme da hvata klik. Bazen se širi 18% van elementa, pa bi
+       inače krao klikove susedima — u katalogu doslovno susednoj kartici. */
+    pointer-events: none;
+    /* Boje bazena su TOKENI, ne tvrdo upisane vrednosti: sekcija sa tamnom
+       podlogom mora da ih pretoči, inače je bazen bela mrlja na čeliku. */
+    background: radial-gradient(
+      ellipse 58% 54% at var(--svetlo-x, 50%) var(--svetlo-y, 44%),
+      var(--svetlo-jezgro, var(--color-bela)) 0%,
+      var(--svetlo-rub, color-mix(in oklab, var(--color-bela) 72%, var(--color-sala))) 46%,
+      transparent 74%
+    );
+    filter: blur(10px);
+    opacity: var(--svetlo-jacina, 1);
+    transition:
+      opacity 0.7s var(--ease-sala),
+      background 0.7s var(--ease-sala);
+  }
+
+  /* Kontaktna senka — bez nje predmet ne stoji ni na čemu i bazen svetla
+     se ne čita kao svetlo, nego kao mrlja. */
+  .svetlo::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    pointer-events: none;
+    left: 16%;
+    right: 16%;
+    bottom: 8%;
+    height: 9%;
+    border-radius: 50%;
+    background: radial-gradient(
+      ellipse at center,
+      var(--svetlo-senka, color-mix(in oklab, var(--color-celik) 20%, transparent)) 0%,
+      transparent 72%
+    );
+    filter: blur(9px);
+    opacity: var(--svetlo-jacina, 1);
+    transition: opacity 0.6s var(--ease-sala);
+  }
+
+  /* Placeholder proizvoda. Providan namerno: predmet pluta u bazenu svetla,
+     ne sedi u kutiji. Odnos 5:3 = tačan odnos finalnih fotografija
+     (~1072x643), da zamena ne pomeri layout. */
+  .placeholder {
+    position: relative;
+    aspect-ratio: 5 / 3;
+    width: 100%;
+    display: grid;
+    place-items: center;
+  }
+
+  /* ----------------------------------------------------------
+     Dugmad
+     ---------------------------------------------------------- */
+  .btn {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 48px;
+    /* Desni padding je umanjen za tracking, da tekst stoji optički
+       centrirano — inače razmak iza poslednjeg slova gura sadržaj ulevo. */
+    padding: 0 calc(1.5rem - 0.085em) 0 1.5rem;
+    /* Tekst dugmeta je RADNJA, ne mašinski podatak — osnovno pismo. Mono je
+       bio brojniji od Archiva na strani i time prestao da bude akcenat. */
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: 0.085em;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+    transition:
+      color 0.34s var(--ease-sprava),
+      border-color 0.34s var(--ease-sprava);
+  }
+
+  /* Podloga se ne menja naglo nego se izvuče odozdo naviše.
+     Hirurška zelena na hover: belo na njoj daje 5,91:1, prolazi AA. */
+  .btn::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--color-pritisnuto);
+    transform: scaleY(0);
+    transform-origin: bottom center;
+    transition: transform 0.4s var(--ease-sprava);
+  }
+
+  .btn:hover::before,
+  .btn:focus-visible::before {
+    transform: scaleY(1);
+  }
+
+  .btn-primary {
+    background: var(--color-plava);
+    color: #fff;
+  }
+
+
+
+  .btn-ghost {
+    border-color: var(--color-ivica);
+    color: var(--color-celik);
+  }
+
+  .btn-ghost:hover,
+  .btn-ghost:focus-visible {
+    border-color: var(--color-celik);
+    color: #fff;
+  }
+
+  .btn .strelica {
+    transition: transform 0.36s var(--ease-sprava);
+  }
+
+  .btn:hover .strelica {
+    transform: translateX(5px);
+  }
+
+  /* Tekstualni link sa linijom koja se izvlači */
+  .link-linija {
+    position: relative;
+    color: var(--color-plava);
+    padding-bottom: 2px;
+  }
+
+  .link-linija::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.42s var(--ease-sprava);
+  }
+
+  .link-linija:hover::after {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+}
+
+/* ============================================================
+   Motion — početna stanja. JS ih skida kroz GSAP.
+   Ako JS ne prođe, .no-js grana ostavlja sve vidljivim.
+   ============================================================ */
+/* ============================================================
+   POLJE — namerno IZVAN @layer.
+
+   Sloj po definiciji gubi od svakog neslojevitog pravila, a stilovi u
+   .astro fajlovima nisu u sloju. Dok je ovaj rečnik stajao u
+   `@layer components`, `.odeljak-naslov { margin: 0 0 … }` ga je tiho
+   gasio — izmereno kao naslov koji je ostao na 72px umesto da viri u
+   marginu. Udvojena klasa (`.istureno.istureno`) rešava sudar sa
+   ostalim neslojevitim pravilima iste specifičnosti.
+   ============================================================ */
+/* ----------------------------------------------------------
+   POLJE — sadržaj ne počinje uvek u prvoj koloni.
+
+   Izmereno pre uvođenja: naslov SVAKE sekcije na SVIH šest strana
+   počinjao je na istoj vertikali (72px na 1440). Kroz 6.500px skrola oko
+   nije imalo nijedan razlog da se pomeri levo ili desno.
+
+   Rečnik je namerno kratak — četiri poteza, ne petnaest. Uloga bira
+   potez, ne ukus:
+
+     (bez klase)  sekcija koja NOSI        — puna leva ivica
+     .kol-2/3/4   sekcija koja PRATI       — uvučena za 1, 2 ili 3 kolone
+     .istureno    naslov koji se OTKIDA    — viri u marginu, izvan rastera
+     .preko-svega traka preko cele širine  — bez shell-a
+
+   Ispod 900px sve pada na levu ivicu: na uskom ekranu uvlačenje jede
+   meru reda i čita se kao greška, ne kao namera.
+   ---------------------------------------------------------- */
+/* Udvojena klasa (`.kol-2.kol-2`) nije stilski hir nego nužnost:
+   `@layer components` po definiciji gubi od SVAKOG neslojevitog pravila,
+   a stilovi u .astro fajlovima nisu u sloju. Bez udvajanja je
+   `.odeljak-naslov { margin: 0 0 … }` tiho gasio `.istureno` —
+   izmereno kao naslov koji je ostao na 72px umesto da viri u marginu. */
+@media (min-width: 900px) {
+  .kol-2.kol-2 {
+    margin-inline-start: 8.333%;
+  }
+
+  .kol-3.kol-3 {
+    margin-inline-start: 16.666%;
+  }
+
+  .kol-4.kol-4 {
+    margin-inline-start: 25%;
+  }
+
+  /* Otkidanje ide SAMO na uzak element (naslov, labela), nikad na mrežu —
+     negativna margina na širokom bloku pravi vodoravno prelivanje. */
+  .istureno.istureno {
+    margin-inline-start: calc(-1 * clamp(1.25rem, 5vw, 5rem));
+  }
+}
+
+/* Puna širina ekrana iz centriranog `.shell`-a. */
+.preko-svega {
+  margin-inline: calc(50% - 50vw);
+  width: 100vw;
+}
+
+
+/* ============================================================
+   TAMNO POGLAVLJE
+
+   Izmereno pre uvođenja: svetlina kroz ceo dokument `/proizvodi` 0,23
+   raspona, `/kontakt` 0,25, `/o-nama` 0,65 (i to samo zbog jedne
+   fotografije). Početna je jedina imala tonalnu arhitekturu (0,91).
+   Sve ostale strane pamte se kao jedan ravan beli blok.
+
+   PRAVILO: svaka strana ima TAČNO JEDNO tamno poglavlje, i ono stoji
+   tamo gde argument te strane doseže vrhunac — ne pred podnožjem kao
+   tonski ukras.
+
+     /            „Izbliza"      strana POKAZUJE proizvod
+     /o-nama      citat          strana GOVORI
+     /proizvodi   poziv na kraju strana TRAŽI
+     /katalog     brojke         strana DOKAZUJE
+     /kontakt     zeleni blok    (boja, ne čelik — vidi kontakt.astro)
+
+   Ivice se ne prelivaju gradijentom: poglavlje počinje i završava rezom,
+   kao promena kadra. Preliv bi tvrdio da je to isti prostor.
+
+   Zelena `#2F6F5E` na čeliku daje 2,1:1 i pada — u tamnom ide `#6FC2A8`.
+   NAMERNO IZVAN @layer i sa UDVOJENOM KLASOM. Prvi pokušaj je stajao u
+   `@layer components`, pa su ga neslojevita pravila strana gasila:
+   `color: var(--color-siva)` na čeliku daje tačno 3,3:1 — izmereno na sve
+   tri strane. Isti kvar kao kod rečnika polja, vidi „Polje".
+   ============================================================ */
+/* Poglavlje mora da ZAUZME prostor. Izmereno: citat na `/o-nama` je držao
+   0,41 ekrana a traka na `/proizvodi` 0,23 — pri uzorkovanju cele strane
+   nisu se ni registrovali kao tonalni događaj (0,55 i 0,59 naspram 0,02
+   na `/katalog`). Promena mesta se ne vidi ako se kroz nju prođe za pola
+   zamaha točka. */
+.poglavlje-tamno.poglavlje-tamno {
+  min-height: min(78svh, 620px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: var(--color-celik);
+  color: var(--color-sala);
+  /* Bazen svetla se pretače: na čeliku jezgro je prigušeno svetlo, a ne
+     bela — čista bela bi bila reflektor, ne sto. */
+  --svetlo-jezgro: rgba(255, 255, 255, 0.2);
+  --svetlo-rub: rgba(150, 190, 205, 0.09);
+  --svetlo-senka: rgba(0, 0, 0, 0.55);
+  --svetlo-jacina: 1;
+}
+
+.poglavlje-tamno.poglavlje-tamno :is(h1, h2, h3, .cifra, .figura, .vrednost, .citat-tekst) {
+  color: var(--color-sala);
+}
+
+.poglavlje-tamno.poglavlje-tamno :is(p, dd, dt, li, address, blockquote, figcaption) {
+  color: rgba(244, 246, 247, 0.62);
+}
+
+/* `--color-ivica` je mišljena za belu podlogu; na čeliku bi bila skoro
+   bela linija. */
+.poglavlje-tamno.poglavlje-tamno :is(.hairline, .std-kartica, .linija-tacka, .izbliza-stavka) {
+  border-color: rgba(244, 246, 247, 0.16);
+}
+
+.poglavlje-tamno.poglavlje-tamno .t-labela,
+.poglavlje-tamno.poglavlje-tamno .t-labela-sm,
+.poglavlje-tamno.poglavlje-tamno .t-mono,
+.poglavlje-tamno.poglavlje-tamno .t-mono-sm {
+  color: #6fc2a8;
+}
+
+/* Plava `#0E6FB4` na čeliku daje 1,9:1. Na tamnom se primarna radnja
+   izvrće u belo — isti izuzetak kao nekad na zelenom bloku. */
+.poglavlje-tamno.poglavlje-tamno .btn-primary {
+  background: var(--color-sala);
+  color: var(--color-celik);
+}
+
+.poglavlje-tamno.poglavlje-tamno .btn-primary:hover,
+.poglavlje-tamno.poglavlje-tamno .btn-primary:focus-visible {
+  color: var(--color-sala);
+}
+
+.poglavlje-tamno.poglavlje-tamno .btn-ghost {
+  border-color: rgba(244, 246, 247, 0.3);
+  color: var(--color-sala);
+}
+
+.poglavlje-tamno.poglavlje-tamno .btn::before {
+  background: var(--color-plava);
+}
+
+.poglavlje-tamno.poglavlje-tamno :focus-visible {
+  outline-color: var(--color-sala);
+}
+
+
+/* ============================================================
+   Cilj dodira — WCAG 2.2, kriterijum 2.5.8
+   ============================================================
+   Namerno IZVAN @layer: sloj gubi od svakog neslojevitog pravila, a stilovi
+   u .astro fajlovima nisu u sloju (vidi „Polje" iznad — ista zamka).
+
+   Telefonski broj je izmeren na 86×17px na pet strana, pod minimumom od
+   24×24. Visina se dobija `min-height`-om, NE paddingom: padding bi pomerio
+   raspored u pet različitih sekcija koje taj link koriste pod pet različitih
+   imena klasa (`poziv-tel`, `izlaz-tel`, `traka-tel`, `akcija-tel`…).
+
+   Bira se po atributu, ne po klasi, pa pokriva i svaki budući `tel:` link. */
+a[href^="tel:"]:not(.telefon) {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
+
+@layer utilities {
+  /* ── Otkrivanje ima SMER ────────────────────────────────────
+     Pravac „Merenje": sadržaj ulazi duž ose svoje mere. Širine i nizovi
+     idu levo→desno, visine i naslovi odozdo. Bez ovoga 71% sajta koristi
+     isti fade-up, što se čita kao šablon. */
+  [data-otkrij] {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+
+  [data-otkrij][data-smer="x"] {
+    transform: translateX(-26px);
+  }
+
+  [data-otkrij][data-smer="mir"] {
+    transform: none;
+  }
+
+  /* Blok sa rečima je odmah vidljiv — pokret nose same reči u svojim
+     prozorima, pa dodatno bleđenje celine samo muti efekat. */
+  [data-reci] {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Naslovi se otkrivaju odozdo naviše umesto fejdom. */
+  [data-maska] {
+    clip-path: inset(0% 0% 105% 0%);
+    transform: translateY(10px);
+  }
+
+  /* Vodoravna maska — kao kota koja se izvlači udesno. */
+  [data-maska="x"] {
+    clip-path: inset(0% 105% 0% 0%);
+    transform: none;
+  }
+
+  .no-js [data-otkrij],
+  .motion-off [data-otkrij] {
+    opacity: 1;
+    transform: none;
+  }
+
+  .no-js [data-maska],
+  .motion-off [data-maska] {
+    clip-path: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    [data-otkrij] {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+
+    [data-maska] {
+      clip-path: none !important;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   PRELAZ IZMEĐU STRANA
+
+   Kartica proizvoda i njegova strana dele `view-transition-name`, pa
+   fotografija i kataloška oznaka PUTUJU iz mreže na stranu. Ostatak
+   strane oko njih samo mirno izbledi — da pažnja ostane na predmetu
+   koji se kreće, a ne na tome što se okolina prebacuje.
+
+   Trajanja su namerno različita: stara strana odlazi brže nego što nova
+   dolazi, pa se ne vidi trenutak kada su obe na pola puta.
+   ══════════════════════════════════════════════════════════════════════ */
+/* Imenovani parovi (slika, oznaka) imaju sopstveni, duži hod: predmet se
+   premešta, a ne menja. Grupa nosi putanju... */
+::view-transition-group(*) {
+  animation-duration: 0.55s;
+  animation-timing-function: var(--ease-instrument);
+}
+
+/* ...a stapanje starog i novog snimka je kratko, da se ne vidi duh.
+   Ovo takođe skraćuje izlazak kartica koje na novoj strani ne postoje:
+   mereno je da su blede 550ms, duže nego što sama strana nestane. */
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation-duration: 0.3s;
+  animation-timing-function: var(--ease-instrument);
+}
+
+/* Pozadina strane ide zasebno i posle njih — imenovan selektor je jači
+   od univerzalnog, pa ove vrednosti stoje. */
+::view-transition-old(root) {
+  animation: prelaz-odlazi 0.26s var(--ease-sala) both;
+}
+
+::view-transition-new(root) {
+  animation: prelaz-dolazi 0.46s 0.04s var(--ease-sala) both;
+}
+
+@keyframes prelaz-odlazi {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes prelaz-dolazi {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root),
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation: none !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   ŠTAMPA
+
+   B2B kupci štampaju spiskove opreme za nabavku — traženo od početka i
+   čuvano dok se dizajn ne slegne.
+
+   Štampa nije ekran u sivom. Tri odluke:
+
+     1. Sve što je NAVIGACIJA ili POKRET nestaje. Zaglavlje, podnožje,
+        traka napretka, dugmad, mape, forma — ništa od toga ne postoji na
+        papiru, a sve troši prostor i toner.
+     2. Sve što je SKRIVENO ZBOG ANIMACIJE mora da se vrati. Elementi sa
+        `data-otkrij` kreću od `opacity: 0`; bez ove grane bi se odštampala
+        prazna strana. Isto važi za `clip-path` maske i letterbox kadar heroja.
+     3. Adresa veze se ISPISUJE uz tekst. Na papiru „Pogledajte proizvode"
+        ne vodi nigde; `/proizvodi` vodi.
+   ══════════════════════════════════════════════════════════════════════ */
+@media print {
+  /* ── 1. Van papira ────────────────────────────────────────────────── */
+  .zaglavlje,
+  .podnozje,
+  .preskoci,
+  .napredak,
+  .mapa-ram,
+  .mapa,
+  .forma,
+  .btn,
+  .traka-upit,
+  .zavrsni-red,
+  .poziv,
+  .hero-raster,
+  .izlaz-akcije,
+  /* Dugme za povratak na vrh se krilo kroz `opacity`, pa je na papiru
+     zauzimalo prostor kao prazna rupa. */
+  .na-vrh,
+  [data-pm-napredak],
+  [data-boje-panel],
+  [data-boje-dugme] {
+    display: none !important;
+  }
+
+  /* ── 2. Sve je vidljivo ───────────────────────────────────────────── */
+  [data-otkrij],
+  [data-maska],
+  .rec,
+  .hero-kadar,
+  .izbliza-otvor,
+  .hero-linija {
+    opacity: 1 !important;
+    transform: none !important;
+    clip-path: none !important;
+    filter: none !important;
+  }
+
+  /* Lepljivi elementi na papiru nemaju smisla — vraćaju se u tok. */
+  .izbliza-lepljivo,
+  .pm-okvir,
+  .indeks,
+  .prikaz {
+    position: static !important;
+  }
+
+  /* Vodoravna traka koraka se na papiru vraća u uspravan niz: papir se ne
+     skroluje, pa bi tri od četiri koraka ostala van strane. */
+  .pm-scena {
+    height: auto !important;
+  }
+
+  .koraci {
+    display: block !important;
+    width: auto !important;
+    transform: none !important;
+  }
+
+  .korak {
+    width: auto !important;
+    break-inside: avoid;
+    margin-bottom: 1rem;
+  }
+
+  /* ── 2b. TAMNA POGLAVLJA SE OBRĆU ─────────────────────────────────
+
+     Ovo je bio najskuplji kvar u štampi i nijedna ranija provera ga nije
+     uhvatila, jer su se gledali `opacity` i vidljivost — a ne BOJA.
+
+     `print-color-adjust` je podrazumevano `economy`: pregledač **ne
+     štampa** tamnu pozadinu, ali boje teksta ostaju svetle. Izmereno na
+     belom papiru:
+
+       naslovi i vrednosti  rgb(244,246,247)        1,08:1
+       telo teksta          rgba(244,246,247,.62)   1,05:1
+       labele i mono        #6FC2A8                 2,11:1
+
+     AA traži 4,5:1 — dakle sadržaj je bio nevidljiv na **58 strana**:
+     svih 54 proizvoda („Tehnički list" — baš ono zbog čega B2B kupac i
+     štampa), plus `/` („Izbliza"), `/o-nama`, `/proizvodi` i `/katalog`.
+
+     NE oslanjati se na `print-color-adjust: exact`. I kad bi pozadina
+     prošla, korisnik je gasi jednim klikom („Background graphics") u
+     dijalogu za štampu i tekst opet nestaje. Zato se obrće SADRŽAJ.
+
+     Dva mehanizma se moraju pokriti: `.poglavlje-tamno` (zajednička
+     klasa) i `.izbliza` (nosi tamnu podlogu direktno u svojoj strani). */
+  .poglavlje-tamno,
+  .poglavlje-tamno.poglavlje-tamno,
+  .izbliza {
+    background: #fff !important;
+    color: #000 !important;
+    min-height: 0 !important;
+  }
+
+  .poglavlje-tamno.poglavlje-tamno :is(h1, h2, h3, h4, p, li, dt, dd, span, address, blockquote, figcaption),
+  .izbliza :is(h1, h2, h3, h4, p, li, dt, dd, span, address, blockquote, figcaption) {
+    color: #000 !important;
+  }
+
+  /* Labele i mono vrednosti nose zelenu koja na papiru daje 2,11:1.
+     Siva umesto crne zadržava razliku u težini, a prolazi kontrast. */
+  .poglavlje-tamno.poglavlje-tamno :is(.t-labela, .t-labela-sm, .t-mono, .t-mono-sm),
+  .izbliza :is(.t-labela, .t-labela-sm, .t-mono, .t-mono-sm) {
+    color: #333 !important;
+  }
+
+  /* Hairline linije u tamnom su bele — na papiru bi nestale. */
+  .poglavlje-tamno.poglavlje-tamno :is(.hairline, .std-kartica, .linija-tacka, .izbliza-stavka),
+  .poglavlje-tamno.poglavlje-tamno :is(.tl-glava, .tl-mera, .tl-oznake li, .tl-stavke li),
+  .izbliza :is(.hairline, .izbliza-stavka) {
+    border-color: #999 !important;
+  }
+
+  /* Bazen svetla je na papiru siva mrlja preko teksta. */
+  .poglavlje-tamno .svetlo::before,
+  .izbliza .svetlo::before {
+    display: none !important;
+  }
+
+  /* ── 3. Papir ─────────────────────────────────────────────────────── */
+  @page {
+    margin: 16mm 14mm;
+  }
+
+  html {
+    font-size: 11pt;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+  }
+
+  .shell,
+  .hero-scena {
+    max-width: none;
+    padding-inline: 0;
+    min-height: 0 !important;
+  }
+
+  /* Razmak sa ekrana je na papiru rasipanje prostora. */
+  .section,
+  .section-tight,
+  .section-glasna,
+  .section-uz,
+  .uvod {
+    padding-block: 0 8mm !important;
+  }
+
+  /* Naslov se ne odvaja od sadržaja koji uvodi. */
+  h1,
+  h2,
+  h3 {
+    break-after: avoid;
+    color: #000;
+  }
+
+  .kartica,
+  .std-kartica,
+  .linija-tacka,
+  .brojka,
+  .izbliza-stavka {
+    break-inside: avoid;
+  }
+
+  /* Dijagonala vremenske linije je ekranski potez — na papiru bi napravila
+     ogromne praznine. */
+  .linija-tacka {
+    margin-block-start: 0 !important;
+  }
+
+  /* Slike se ne rastežu preko strane. */
+  img {
+    max-width: 100% !important;
+    max-height: 70mm;
+    object-fit: contain;
+  }
+
+  /* Bazen svetla i lampa su ekranski efekti. */
+  .svetlo::before,
+  .svetlo::after,
+  .mreza::before {
+    display: none !important;
+  }
+
+  /* Adresa veze uz tekst — na papiru veza inače ne vodi nigde. */
+  a[href^="/"]::after {
+    content: " (bsp.rs" attr(href) ")";
+    font-size: 9pt;
+    color: #444;
+  }
+
+  a[href^="tel:"]::after,
+  a[href^="mailto:"]::after,
+  a[href^="#"]::after {
+    content: "";
+  }
+}

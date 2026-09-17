@@ -1,0 +1,545 @@
+---
+import katalog from "../../data/proizvodi.json";
+
+interface Props {
+  aktivna?: "pocetna" | "proizvodi" | "katalog" | "o-nama" | "kontakt";
+}
+const { aktivna } = Astro.props;
+
+const veze = [
+  { id: "pocetna", naziv: "Početna", href: "/" },
+  { id: "proizvodi", naziv: "Proizvodi", href: "/proizvodi" },
+  { id: "katalog", naziv: "Katalog", href: "/katalog" },
+  { id: "o-nama", naziv: "O nama", href: "/o-nama" },
+  { id: "kontakt", naziv: "Kontakt", href: "/kontakt" },
+] as const;
+
+// Mobilni meni nosi i ceo katalog — do kategorije se stiže iz jednog dodira,
+// umesto: meni → Proizvodi → traka kategorija.
+const kategorije = katalog.kategorije.map((k) => ({
+  slug: k.slug,
+  naziv: k.naziv,
+  broj: katalog.proizvodi.filter((p) => p.kategorija === k.slug).length,
+}));
+---
+
+<header class="zaglavlje" data-zaglavlje>
+  <div class="shell traka">
+    <a href="/" class="znak" aria-label="BSP — početna">
+      <span class="znak-slova">BSP</span>
+      <span class="znak-crta" aria-hidden="true"></span>
+    </a>
+
+    <nav class="nav-desktop" aria-label="Glavna navigacija">
+      {
+        veze.map((v) => (
+          <a
+            href={v.href}
+            class="nav-veza t-labela"
+            aria-current={aktivna === v.id ? "page" : undefined}
+            data-aktivna={aktivna === v.id ? "" : undefined}
+          >
+            {v.naziv}
+          </a>
+        ))
+      }
+    </nav>
+
+    <div class="desno">
+      <a href="tel:+38113348844" class="telefon">
+        <svg class="telefon-ikona" width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path
+            d="M5.2 2.2 6.6 5 5.3 6.3a8.4 8.4 0 0 0 4.4 4.4L11 9.4l2.8 1.4v2.4c0 .6-.5 1.1-1.1 1a11.6 11.6 0 0 1-10.9-10.9c0-.6.4-1.1 1-1.1h2.4Z"
+            stroke="currentColor"
+            stroke-width="1.35"
+            stroke-linejoin="round"
+          />
+        </svg>
+        <span class="telefon-broj">013 348844</span>
+      </a>
+      <button
+        type="button"
+        class="prekidac"
+        aria-label="Otvori meni"
+        aria-expanded="false"
+        aria-controls="meni-mobilni"
+        data-prekidac
+      >
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+      </button>
+    </div>
+  </div>
+
+  <div class="linija" aria-hidden="true">
+    <span class="napredak" data-napredak></span>
+  </div>
+</header>
+
+<div class="meni" id="meni-mobilni" data-meni data-lenis-prevent hidden>
+  <nav class="shell meni-unutra" aria-label="Meni">
+    {
+      /* `aria-current` MORA i ovde. Desktop navigacija ga ima, mobilni meni
+         ga nije imao — pa je ista navigacija govorila različito u
+         zavisnosti od širine ekrana, a korisnik čitača na telefonu nije
+         dobijao informaciju na kojoj je strani. */
+      veze.map((v, i) => (
+        <a
+          href={v.href}
+          class="meni-veza t-h2"
+          style={`--i:${i}`}
+          aria-current={aktivna === v.id ? "page" : undefined}
+        >
+          {v.naziv}
+        </a>
+      ))
+    }
+    <div class="meni-kategorije">
+      <h2 class="t-labela meni-naslov">Kategorije</h2>
+      <ul class="meni-lista">
+        {kategorije.map((k) => (
+          <li>
+            <a href={`/proizvodi#${k.slug}`} class="meni-kat">
+              <span>{k.naziv}</span>
+              <span class="t-mono-sm meni-kat-broj">{k.broj}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    <div class="meni-podnozje">
+      <a href="tel:+38113348844" class="t-mono">013 348844</a>
+      <span class="t-labela-sm">Novoseljanski put 139A, Pančevo</span>
+    </div>
+  </nav>
+</div>
+
+<style>
+  .zaglavlje {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 100;
+    background: color-mix(in oklab, var(--color-sala) 78%, transparent);
+    backdrop-filter: blur(14px) saturate(1.4);
+    -webkit-backdrop-filter: blur(14px) saturate(1.4);
+    transition: background-color 0.4s var(--ease-sala);
+  }
+
+  .zaglavlje[data-skrolovano] {
+    background: color-mix(in oklab, var(--color-sala) 94%, transparent);
+  }
+
+  .traka {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    height: 76px;
+  }
+
+  .linija {
+    position: relative;
+    height: 1px;
+    background: var(--color-ivica);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.6s var(--ease-sala);
+  }
+
+  .zaglavlje[data-skrolovano] .linija {
+    transform: scaleX(1);
+  }
+
+  /* Koliko je strane pređeno — puni se preko hairline linije zaglavlja. */
+  .napredak {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 100%;
+    background: var(--color-plava);
+    transform: scaleX(0);
+    transform-origin: left center;
+  }
+
+  /* Znak: BSP + tanka plava crta koja raste na hover */
+  .znak {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .znak-slova {
+    font-weight: 700;
+    font-size: 1.375rem;
+    letter-spacing: -0.045em;
+    line-height: 1;
+  }
+
+  /* CRTA SE OTKRIVA `clip-path`-om, NE `width`-om.
+
+     Izgled je isti: 14px u miru, puna širina na hover. Ali `width` je
+     svojstvo koje traži RASPORED u svakom frejmu. Izmereno na deset hover
+     ciklusa: **+422 prolaza rasporeda, +84ms** — oko 42 rasporeda po
+     jednom prelazu od 0,6s.
+
+     `clip-path` se izvodi na kompozitoru i ne dira raspored. `scaleX` ovde
+     ne bi radio: crta ide od FIKSNIH 14px do 100%, a odnos zavisi od
+     širine znaka „BSP", koja se menja sa prelomnom tačkom — pa se faktor
+     razmere ne može zapisati u CSS-u. `inset()` sa `calc()` to rešava
+     tačno, bez ijednog broja koji bi trebalo pogađati. */
+  .znak-crta {
+    display: block;
+    height: 2px;
+    width: 100%;
+    background: var(--color-plava);
+    clip-path: inset(0 calc(100% - 14px) 0 0);
+    transition: clip-path 0.6s var(--ease-sala);
+  }
+
+  .znak:hover .znak-crta,
+  .znak:focus-visible .znak-crta {
+    clip-path: inset(0 0 0 0);
+  }
+
+  .nav-desktop {
+    display: none;
+    gap: 2rem;
+  }
+
+  .nav-veza {
+    position: relative;
+    color: var(--color-siva);
+    padding-block: 0.5rem;
+    transition: color 0.4s var(--ease-sala);
+  }
+
+  .nav-veza::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 1px;
+    background: var(--color-plava);
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.55s var(--ease-sala);
+  }
+
+  .nav-veza:hover,
+  .nav-veza[data-aktivna] {
+    color: var(--color-celik);
+  }
+
+  .nav-veza:hover::after,
+  .nav-veza[data-aktivna]::after {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+
+  .desno {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  /* Telefon je primarni kanal za upit — nosi ga plava podloga, ne siva
+     mono labela koja se gubi u traci. */
+  .telefon {
+    display: none;
+    align-items: center;
+    gap: 0.55rem;
+    min-height: 42px;
+    padding: 0 1rem;
+    background: var(--color-plava);
+    color: #fff;
+    font-weight: 500;
+    font-size: 0.9375rem;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    transition: background-color 0.45s var(--ease-sala);
+  }
+
+  /* Puna kontrola ponire u čelik — isto pravilo kao `.btn`. */
+  .telefon:hover {
+    background: var(--color-pritisnuto);
+  }
+
+  .telefon-ikona {
+    flex: none;
+    opacity: 0.85;
+  }
+
+  /* Prekidač: dve linije koje postaju X */
+  .prekidac {
+    width: 48px;
+    height: 48px;
+    margin-right: -12px;
+    display: grid;
+    place-content: center;
+    gap: 6px;
+    background: none;
+    border: 0;
+  }
+
+  .prekidac span {
+    display: block;
+    width: 22px;
+    height: 1.5px;
+    background: var(--color-celik);
+    transition: transform 0.35s var(--ease-sala);
+  }
+
+  .prekidac[aria-expanded="true"] span:first-child {
+    transform: translateY(3.75px) rotate(45deg);
+  }
+
+  .prekidac[aria-expanded="true"] span:last-child {
+    transform: translateY(-3.75px) rotate(-45deg);
+  }
+
+  /* Mobilni meni */
+  .meni {
+    position: fixed;
+    inset: 76px 0 0 0;
+    z-index: 99;
+    background: var(--color-sala);
+    display: block;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s var(--ease-sala);
+  }
+
+  .meni[data-otvoren] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .meni-unutra {
+    padding-block: clamp(2rem, 8vw, 4rem);
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .meni-veza {
+    padding-block: 0.35rem;
+    opacity: 0;
+    transform: translateY(14px);
+    transition:
+      opacity 0.4s var(--ease-sala),
+      transform 0.4s var(--ease-sala);
+    transition-delay: calc(var(--i) * 60ms + 60ms);
+  }
+
+  .meni[data-otvoren] .meni-veza {
+    opacity: 1;
+    transform: none;
+  }
+
+  .meni-kategorije {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-ivica);
+  }
+
+  .meni-naslov {
+    color: var(--color-siva);
+    margin: 0 0 0.5rem;
+  }
+
+  .meni-lista {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .meni-kat {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 48px;
+    padding-block: 0.6rem;
+    border-bottom: 1px solid var(--color-ivica);
+    font-size: 1rem;
+  }
+
+  .meni-kat:active {
+    color: var(--color-plava);
+  }
+
+  .meni-kat-broj {
+    color: var(--color-siva);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .meni-podnozje {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-ivica);
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    color: var(--color-siva);
+  }
+
+  .meni-podnozje a {
+    color: var(--color-plava);
+  }
+
+  @media (min-width: 900px) {
+    .traka {
+      height: 88px;
+    }
+    .nav-desktop {
+      display: flex;
+    }
+    .telefon {
+      display: inline-flex;
+    }
+    .prekidac,
+    .meni {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  import { naSvakojStrani } from "../scripts/zivot";
+
+  /* Zaglavlje se pri klijentskoj navigaciji menja zajedno sa telom strane
+     (nosi „aktivna" stanje), pa se skripta pokreće iznova. Dva osluškivača
+     vise na window/document i nadživela bi zamenu — njih skida čistač. */
+  naSvakojStrani(() => {
+
+    // Deklarisano izvan blokova da ih čistač na dnu vidi.
+    let oceni: (() => void) | null = null;
+    let naEskejp: ((e: KeyboardEvent) => void) | null = null;
+    let naTab: ((e: KeyboardEvent) => void) | null = null;
+    let siroko: MediaQueryList | null = null;
+    let naSirinu: (() => void) | null = null;
+
+    const zaglavlje = document.querySelector<HTMLElement>("[data-zaglavlje]");
+    const prekidac = document.querySelector<HTMLButtonElement>("[data-prekidac]");
+    const meni = document.querySelector<HTMLElement>("[data-meni]");
+
+    // Senka/linija tek kad se odmakne od vrha
+    if (zaglavlje) {
+      oceni = () => {
+        zaglavlje.toggleAttribute("data-skrolovano", window.scrollY > 12);
+      };
+      oceni();
+      window.addEventListener("scroll", oceni, { passive: true });
+    }
+
+    if (prekidac && meni) {
+      const postavi = (otvoren: boolean) => {
+        prekidac.setAttribute("aria-expanded", String(otvoren));
+        prekidac.setAttribute("aria-label", otvoren ? "Zatvori meni" : "Otvori meni");
+
+        /* `overflow: hidden` na telu NIJE dovoljno.
+
+           Na dodiru radi (Lenis ima `syncTouch: false`, pa tamo skroluje
+           pregledač i poštuje `overflow`). Na mišu i trackpadu Lenis
+           pomera stranu PROGRAMSKI i to zaključavanje zaobilazi —
+           izmereno: sa otvorenim menijem strana se pomerila 0 -> 600px.
+           Zato se Lenis izričito zaustavlja. */
+        document.body.style.overflow = otvoren ? "hidden" : "";
+        const lenis = window.__lenis;
+        if (otvoren) lenis?.stop();
+        else lenis?.start();
+
+        if (otvoren) {
+          meni.hidden = false;
+          requestAnimationFrame(() => meni.setAttribute("data-otvoren", ""));
+        } else {
+          meni.removeAttribute("data-otvoren");
+          setTimeout(() => {
+            if (prekidac.getAttribute("aria-expanded") === "false") meni.hidden = true;
+          }, 350);
+        }
+      };
+
+      prekidac.addEventListener("click", () => {
+        postavi(prekidac.getAttribute("aria-expanded") !== "true");
+      });
+
+      /* ZAMKA FOKUSA.
+
+         Bez nje Tab „propada" iza otvorenog preklopa: izmereno, od 14
+         pritisaka Taba njih 4 je izašlo iz menija, prvo na vezu
+         „Preskoči na sadržaj". Korisnik tastature tada pomera fokus po
+         strani koju ne vidi. */
+      naTab = (e: KeyboardEvent) => {
+        if (e.key !== "Tab") return;
+        if (prekidac.getAttribute("aria-expanded") !== "true") return;
+
+        const uzmi = [
+          prekidac,
+          ...meni.querySelectorAll<HTMLElement>(
+            'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])',
+          ),
+        ].filter((el) => el.offsetParent !== null || el === prekidac);
+        if (!uzmi.length) return;
+
+        const prvi = uzmi[0];
+        const zadnji = uzmi[uzmi.length - 1];
+        const tekuci = document.activeElement;
+
+        // Fokus je pobegao izvan menija — vrati ga na prvi element.
+        if (!meni.contains(tekuci) && tekuci !== prekidac) {
+          e.preventDefault();
+          prvi.focus();
+          return;
+        }
+        // Krug: sa poslednjeg napred na prvi, sa prvog unazad na poslednji.
+        if (!e.shiftKey && tekuci === zadnji) {
+          e.preventDefault();
+          prvi.focus();
+        } else if (e.shiftKey && tekuci === prvi) {
+          e.preventDefault();
+          zadnji.focus();
+        }
+      };
+      document.addEventListener("keydown", naTab);
+
+      /* ŠIROK PROZOR ZATVARA MENI.
+
+         Ranije je stanje preživljavalo promenu veličine: otvoren meni na
+         390px pa proširenje na 1440px ostavljalo je `hidden=false`,
+         `aria-expanded="true"` i `overflow: hidden` na telu. Vraćanje na
+         usku širinu tada prikaže meni otvoren, bez ijedne radnje
+         korisnika. Prag prati isti breakpoint na kom se prekidač krije. */
+      siroko = window.matchMedia("(min-width: 900px)");
+      naSirinu = () => {
+        if (siroko!.matches && prekidac.getAttribute("aria-expanded") === "true") postavi(false);
+      };
+      siroko.addEventListener("change", naSirinu);
+
+      naEskejp = (e: KeyboardEvent) => {
+        if (e.key === "Escape" && prekidac.getAttribute("aria-expanded") === "true") {
+          postavi(false);
+          prekidac.focus();
+        }
+      };
+      document.addEventListener("keydown", naEskejp);
+
+      meni.querySelectorAll("a").forEach((a) => a.addEventListener("click", () => postavi(false)));
+    }
+
+    return () => {
+      if (oceni) window.removeEventListener("scroll", oceni);
+      if (naEskejp) document.removeEventListener("keydown", naEskejp);
+      if (naTab) document.removeEventListener("keydown", naTab);
+      if (siroko && naSirinu) siroko.removeEventListener("change", naSirinu);
+      // Meni je mogao ostati otvoren u trenutku klika na vezu.
+      document.body.style.overflow = "";
+      window.__lenis?.start();
+    };
+  });
+</script>

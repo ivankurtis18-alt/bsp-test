@@ -1,0 +1,124 @@
+---
+import { Image } from "astro:assets";
+
+/**
+ * Vizual proizvoda.
+ *
+ * Ako je prosleđena `slika`, renderuje se optimizovana fotografija; ako nije,
+ * stoji placeholder. Oba slučaja drže isti okvir 5:3 — tačan odnos finalnih
+ * fotografija — pa zamena placeholdera slikom ne pomera layout.
+ *
+ * Kadar placeholdera je označen samo uglovima: pun okvir bi zatvorio predmet
+ * u kutiju i pojeo bazen svetla iza njega. Kataloška oznaka se ne ispisuje
+ * ovde — nosi je kartica, i ostaje i posle zamene fotografijom.
+ */
+interface Props {
+  sifra: string;
+  naziv: string;
+  klasa?: string;
+  slika?: ImageMetadata;
+  prioritet?: boolean;
+  /** Za providne PNG-ove: `multiply` bi ih na tamnoj podlozi pocrnelo. */
+  bezStapanja?: boolean;
+}
+const { sifra, naziv, klasa = "", slika, prioritet = false, bezStapanja = false } = Astro.props;
+---
+
+{
+  slika ? (
+    <div class={`okvir ${klasa}`}>
+      <Image
+        src={slika}
+        alt={`${naziv}, oznaka ${sifra}`}
+        widths={[560, 840, 1328]}
+        sizes="(min-width: 1000px) 46vw, 92vw"
+        loading={prioritet ? "eager" : "lazy"}
+        fetchpriority={prioritet ? "high" : "auto"}
+        decoding={prioritet ? "sync" : "async"}
+        class:list={["slika", { "bez-stapanja": bezStapanja }]}
+      />
+    </div>
+  ) : (
+    <div
+      class={`placeholder kadar ${klasa}`}
+      role="img"
+      aria-label={`Fotografija u pripremi — ${naziv} (${sifra})`}
+    >
+      <span class="t-mono-sm napomena" aria-hidden="true">
+        Fotografija u pripremi
+      </span>
+      <span class="ugao ugao-gl" aria-hidden="true" />
+      <span class="ugao ugao-gd" aria-hidden="true" />
+      <span class="ugao ugao-dl" aria-hidden="true" />
+      <span class="ugao ugao-dd" aria-hidden="true" />
+    </div>
+  )
+}
+
+<style>
+  .okvir {
+    position: relative;
+    aspect-ratio: 5 / 3;
+    width: 100%;
+  }
+
+  .slika {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    /* Fotografija je snimljena na beloj podlozi. `multiply` stapa tu belinu
+       sa podlogom stranice, pa se ne vidi pravougaonik oko proizvoda i bazen
+       svetla prolazi kroz nju. */
+    mix-blend-mode: multiply;
+  }
+
+  .slika.bez-stapanja {
+    mix-blend-mode: normal;
+  }
+
+  .kadar {
+    position: relative;
+  }
+
+  .napomena {
+    color: var(--color-siva);
+    opacity: 0.45;
+    font-size: 0.625rem;
+    user-select: none;
+  }
+
+  .ugao {
+    position: absolute;
+    width: 13px;
+    height: 13px;
+    border: 0 solid var(--color-ivica);
+  }
+
+  .ugao-gl {
+    top: 0;
+    left: 0;
+    border-top-width: 1px;
+    border-left-width: 1px;
+  }
+
+  .ugao-gd {
+    top: 0;
+    right: 0;
+    border-top-width: 1px;
+    border-right-width: 1px;
+  }
+
+  .ugao-dl {
+    bottom: 0;
+    left: 0;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+  }
+
+  .ugao-dd {
+    bottom: 0;
+    right: 0;
+    border-bottom-width: 1px;
+    border-right-width: 1px;
+  }
+</style>

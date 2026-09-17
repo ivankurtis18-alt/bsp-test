@@ -1,0 +1,606 @@
+---
+import { Image } from "astro:assets";
+import katalog from "../../../data/proizvodi.json";
+import opisi from "../../../data/opisi.json";
+import { tipProizvoda } from "../../lib/katalog";
+import { glavnaSlika } from "../../lib/slike";
+/* Fontovi se uzimaju LOKALNO, iz istog generisanog fajla kao i ostatak
+   sajta. Ranije je ova strana vukla Archivo i JetBrains sa
+   `fonts.googleapis.com` — jedino mesto na sajtu koje je to još radilo.
+   Dva razloga zašto je to bio problem: strana je javno dostupna, pa je
+   svakom posetiocu slala IP Google-u bez pristanka, i protivrečila je
+   odluci da se fontovi hostuju lokalno. Lokalni Archivo je varijabilan
+   400–700, JetBrains 400–500 — pokriva tačno ono što je ovde traženo. */
+import "../../styles/fontovi.css";
+
+/**
+ * Izvor za PDF katalog. Namerno NE koristi Layout ni global.css — ekranska
+ * pravila (reveal na opacity 0, glatki skrol, fiksno zaglavlje) nemaju šta da
+ * traže u štampi. Tokeni i fontovi su ovde ponovljeni svesno.
+ *
+ * PDF se pravi iz ove strane: `npm run katalog`.
+ */
+const { proizvodi, kategorije } = katalog;
+type Opis = { sekcije: { naslov: string | null; stavke: string[] }[] };
+const svi = opisi as Record<string, Opis>;
+
+const jeSamoOznaka = (t: string) => /^(MD\s*)?[\d\-()\s./]+$/i.test(t.trim());
+
+const sekcije = kategorije.map((k) => {
+  const stavke = proizvodi
+    .filter((p) => p.kategorija === k.slug)
+    .map((p) => {
+      const o = svi[p.slug]?.sekcije ?? [];
+      return {
+        ...p,
+        tip: tipProizvoda(p.naziv),
+        slika: glavnaSlika(p.slug),
+        uvod: o.filter((s) => !s.naslov).flatMap((s) => s.stavke).filter((t) => !jeSamoOznaka(t)),
+        tabele: o.filter((s) => s.naslov && s.stavke.length),
+      };
+    });
+  return { ...k, stavke };
+});
+
+const godina = new Date().getFullYear();
+---
+
+<html lang="sr-Latn">
+  <head>
+    <meta charset="utf-8" />
+    <title>BSP — Katalog proizvoda {godina}</title>
+    {/* Izvor za PDF, ne strana za posetioce: 54 slike se učitavaju odjednom
+         jer štampa ne trpi lazy. Van pretrage. */}
+    <meta name="robots" content="noindex, nofollow" />
+  </head>
+
+  <body>
+    {/* ══════════════════ NASLOVNA ══════════════════ */}
+    <section class="strana naslovna">
+      <div class="naslovna-vrh">
+        <span class="znak">BSP</span>
+        <span class="mono">SZR BSP-MGM <span>·</span> Pančevo</span>
+      </div>
+
+      <div class="naslovna-sredina">
+        <p class="mono nadnaslov">Katalog proizvoda {godina}</p>
+        <h1>
+          Medicinska oprema<br />po meri ustanove.
+        </h1>
+        <p class="naslovna-lead">
+          Bolnički kreveti, stolice za dijalizu i davanje krvi, pedijatrija, ginekologija,
+          hirurgija, ormari i oprema za ordinacije. {proizvodi.length} proizvoda u {kategorije.length} kategorija.
+        </p>
+      </div>
+
+      <div class="naslovna-dno">
+        <div>
+          <span class="mono labela">Proizvodnja</span>
+          <p>Novoseljanski put 139A<br />26000 Pančevo, Srbija</p>
+        </div>
+        <div>
+          <span class="mono labela">Kontakt</span>
+          <p>013 348844<br />bsp.rs</p>
+        </div>
+        <div>
+          <span class="mono labela">Standardi</span>
+          <p>ISO 13485<br />ISO 9001 · ISO 14001</p>
+        </div>
+      </div>
+    </section>
+
+    {/* ══════════════════ O FIRMI ══════════════════ */}
+    <section class="strana">
+      <h2 class="naslov-strane">O firmi</h2>
+      <div class="dvokolona">
+        <div class="proza">
+          <p class="istaknuto">
+            Firma BSP-MGM osnovana je 1985. godine kao porodična firma za proizvodnju metalnog
+            nameštaja. Krajem devedesetih počinje sa proizvodnjom medicinskog programa, da bi
+            danas to bio njen glavni i jedini program.
+          </p>
+          <p>
+            Posedujemo profesionalni tim ljudi za proizvodnju, kontrolu kvaliteta, prodaju i
+            servis posle prodaje. Svojim dugogodišnjim iskustvom, stalnim razvojem i sprovođenjem
+            kontrole kvaliteta firma je dobila sertifikat ISO 13485 za kontrolu kvaliteta
+            proizvodnje medicinskih sredstava. Ujedno poseduje i sertifikate ISO 9001 i ISO 14001.
+          </p>
+          <p>
+            Svi proizvodi trpe izmene u pogledu gabarita, funkcija, boje tapacirunga, boje
+            metalnog dela i dizajna. Izrađuju se od kvalitetnih materijala — u prvom redu čeličnih
+            profila raznih dimenzija i oblika koji se završno zaštićuju plastificiranjem, eko-kože
+            i mikrofibera stranih proizvođača, a drvene površine od univera.
+          </p>
+          <p class="citat">Vi znate šta Vam treba, mi znamo da proizvedemo.</p>
+        </div>
+
+        <aside class="podaci">
+          <div class="podatak">
+            <span class="mono labela">Iskustvo</span>
+            <span class="broj">39</span>
+            <span class="ispod">godina</span>
+          </div>
+          <div class="podatak">
+            <span class="mono labela">Pogon</span>
+            <span class="broj">2.000</span>
+            <span class="ispod">m² u Pančevu</span>
+          </div>
+          <div class="podatak">
+            <span class="mono labela">Ponuda</span>
+            <span class="broj">{proizvodi.length}</span>
+            <span class="ispod">proizvoda</span>
+          </div>
+          <div class="podatak razmak">
+            <span class="mono labela">Udaljenost</span>
+            <p class="sitno">
+              Beograd 17 km<br />
+              Aerodrom „Nikola Tesla" 45 km<br />
+              Luka Dunav, carinski terminal 6 km
+            </p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    {/* ══════════════════ SADRŽAJ ══════════════════ */}
+    <section class="strana">
+      <h2 class="naslov-strane">Sadržaj</h2>
+      <ol class="sadrzaj">
+        {
+          sekcije.map((s, i) => (
+            <li>
+              <a href={`#${s.slug}`}>
+                <span class="mono redni">{String(i + 1).padStart(2, "0")}</span>
+                <span class="sadrzaj-naziv">{s.naziv}</span>
+                <span class="tackice" aria-hidden="true" />
+                <span class="mono sadrzaj-broj" data-strana={s.slug}>
+                  —
+                </span>
+              </a>
+            </li>
+          ))
+        }
+      </ol>
+      <p class="napomena-sadrzaj">
+        Sve dimenzije, funkcije i boje prilagođavaju se zahtevu naručioca. Navedene vrednosti su
+        standardne izvedbe.
+      </p>
+    </section>
+
+    {/* ══════════════════ KATEGORIJE ══════════════════ */}
+    {
+      sekcije.map((s) => (
+        <section class="strana kategorija" id={s.slug}>
+          <header class="kat-glava">
+            <h2 class="naslov-strane" data-kat-naslov={s.slug}>
+              {s.naziv}
+            </h2>
+            <span class="mono kat-broj">
+              {s.stavke.length} {s.stavke.length === 1 ? "proizvod" : "proizvoda"}
+            </span>
+          </header>
+
+          {s.stavke.map((p) => (
+            <article class="proizvod">
+              <div class="proizvod-slika">
+                {p.slika ? (
+                  <Image
+                    src={p.slika}
+                    alt={p.naziv}
+                    width={940}
+                    format="jpeg"
+                    quality={84}
+                    loading="eager"
+                    decoding="sync"
+                  />
+                ) : (
+                  <div class="prazno" />
+                )}
+                <span class="mono oznaka-ispod">{p.sifra}</span>
+              </div>
+
+              <div class="proizvod-tekst">
+                <h3>{p.tip}</h3>
+                {p.uvod.slice(0, 2).map((t) => (
+                  <p class="namena">{t}</p>
+                ))}
+                {p.tabele.map((t) => (
+                  <div class="tabela">
+                    <span class="mono tabela-naslov">{t.naslov}</span>
+                    <ul>
+                      {t.stavke.map((x) => (
+                        <li>{x}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </article>
+          ))}
+        </section>
+      ))
+    }
+
+    {/* ══════════════════ ZADNJA ══════════════════ */}
+    <section class="strana zadnja">
+      <div>
+        <span class="znak">BSP</span>
+        <p class="zadnja-lead">
+          Pošaljite dimenzije i funkcije koje tražite — računamo od toga.
+        </p>
+      </div>
+      <div class="zadnja-podaci">
+        <div>
+          <span class="mono labela">Telefon</span>
+          <p class="veliko">013 348844</p>
+          <p class="sitno">Ponedeljak — petak, 07:00 — 15:00</p>
+        </div>
+        <div>
+          <span class="mono labela">Adresa</span>
+          <p>SZR BSP-MGM<br />Novoseljanski put 139A<br />26000 Pančevo, Srbija</p>
+        </div>
+        <div>
+          <span class="mono labela">Standardi</span>
+          <p>ISO 13485 · ISO 9001 · ISO 14001</p>
+        </div>
+      </div>
+    </section>
+  </body>
+</html>
+
+<style is:global>
+  /* ============================================================
+     Katalog za štampu. A4 uspravno.
+
+     Slike idu kao JPEG na beloj podlozi, ne PNG sa alfom: katalog je ionako
+     beo, a providnost je terala Chrome da ugrađuje slike bez gubitaka — PDF
+     je zbog toga bio 24 MB. Širina 940 px na 78 mm daje ~306 DPI.
+     Slika nikad ne prelazi ~78 mm širine: originali su 1072 px, što na toj
+     širini daje ~349 DPI. Preko cele strane bi palo na ~150 DPI i videlo bi
+     se kao meko.
+     ============================================================ */
+  :root {
+    --sala: #f4f6f7;
+    --bela: #ffffff;
+    --celik: #0d1b22;
+    --siva: #5c6e77;
+    --ivica: #d8dfe2;
+    --plava: #0e6fb4;
+    --zelena: #2f6f5e;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 17mm 15mm 18mm;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body {
+    margin: 0;
+    background: var(--bela);
+    color: var(--celik);
+    font-family: "Archivo", system-ui, sans-serif;
+    font-size: 9.2pt;
+    line-height: 1.5;
+  }
+
+  .mono {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 6.6pt;
+    font-weight: 500;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+  }
+
+  .strana {
+    break-after: page;
+  }
+
+  .strana:last-child {
+    break-after: auto;
+  }
+
+  /* ── Naslovna ─────────────────────────────────── */
+  .naslovna {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 262mm;
+  }
+
+  .naslovna-vrh {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding-bottom: 5mm;
+    border-bottom: 0.5pt solid var(--celik);
+  }
+
+  .znak {
+    font-weight: 700;
+    font-size: 20pt;
+    letter-spacing: -0.05em;
+  }
+
+  .naslovna-sredina h1 {
+    margin: 4mm 0 6mm;
+    font-size: 34pt;
+    font-weight: 600;
+    line-height: 1.02;
+    letter-spacing: -0.035em;
+  }
+
+  .nadnaslov {
+    color: var(--plava);
+  }
+
+  .naslovna-lead {
+    margin: 0;
+    max-width: 105mm;
+    font-size: 10.5pt;
+    line-height: 1.55;
+    color: var(--siva);
+  }
+
+  .naslovna-dno {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8mm;
+    padding-top: 5mm;
+    border-top: 0.5pt solid var(--ivica);
+  }
+
+  .naslovna-dno p {
+    margin: 1.5mm 0 0;
+    line-height: 1.5;
+  }
+
+  .labela {
+    color: var(--siva);
+  }
+
+  /* ── Naslovi strana ───────────────────────────── */
+  .naslov-strane {
+    margin: 0 0 6mm;
+    font-size: 19pt;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+  }
+
+  /* ── O firmi ──────────────────────────────────── */
+  .dvokolona {
+    display: grid;
+    grid-template-columns: 1fr 52mm;
+    gap: 10mm;
+  }
+
+  .proza p {
+    margin: 0 0 3.5mm;
+    color: var(--siva);
+  }
+
+  .proza .istaknuto {
+    color: var(--celik);
+    font-size: 10.5pt;
+    font-weight: 500;
+    line-height: 1.5;
+  }
+
+  .citat {
+    margin-top: 6mm !important;
+    padding-top: 4mm;
+    border-top: 0.5pt solid var(--ivica);
+    font-size: 13pt;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: var(--celik) !important;
+  }
+
+  .podaci {
+    display: flex;
+    flex-direction: column;
+    gap: 5mm;
+  }
+
+  .podatak {
+    display: flex;
+    flex-direction: column;
+    padding-top: 2.5mm;
+    border-top: 0.5pt solid var(--ivica);
+  }
+
+  .broj {
+    font-size: 21pt;
+    font-weight: 600;
+    letter-spacing: -0.04em;
+    line-height: 1.05;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ispod {
+    color: var(--siva);
+  }
+
+  .sitno {
+    margin: 1.5mm 0 0;
+    font-size: 8pt;
+    line-height: 1.5;
+    color: var(--siva);
+  }
+
+  /* ── Sadržaj ──────────────────────────────────── */
+  .sadrzaj {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 0.5pt solid var(--ivica);
+  }
+
+  .sadrzaj a {
+    display: flex;
+    align-items: baseline;
+    gap: 4mm;
+    padding: 2.6mm 0;
+    border-bottom: 0.5pt solid var(--ivica);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .redni {
+    color: var(--siva);
+    min-width: 8mm;
+  }
+
+  .sadrzaj-naziv {
+    font-size: 10.5pt;
+    font-weight: 500;
+    letter-spacing: -0.015em;
+  }
+
+  .tackice {
+    flex: 1;
+    border-bottom: 0.5pt dotted var(--ivica);
+    transform: translateY(-1mm);
+  }
+
+  .sadrzaj-broj {
+    color: var(--zelena);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .napomena-sadrzaj {
+    margin-top: 6mm;
+    max-width: 120mm;
+    font-size: 8pt;
+    color: var(--siva);
+  }
+
+  /* ── Kategorija i proizvod ────────────────────── */
+  .kat-glava {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 6mm;
+    padding-bottom: 3mm;
+    margin-bottom: 6mm;
+    border-bottom: 0.75pt solid var(--celik);
+  }
+
+  .kat-glava .naslov-strane {
+    margin: 0;
+  }
+
+  .kat-broj {
+    color: var(--siva);
+  }
+
+  /* Proizvod se nikad ne lomi preko dve strane. */
+  .proizvod {
+    display: grid;
+    grid-template-columns: 78mm 1fr;
+    gap: 8mm;
+    padding: 5mm 0;
+    border-bottom: 0.5pt solid var(--ivica);
+    break-inside: avoid;
+  }
+
+  .proizvod-slika img,
+  .prazno {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 5 / 3;
+    object-fit: contain;
+    background: var(--sala);
+  }
+
+  .oznaka-ispod {
+    display: block;
+    margin-top: 2mm;
+    color: var(--plava);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .proizvod-tekst h3 {
+    margin: 0 0 2.5mm;
+    font-size: 12pt;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+
+  .namena {
+    margin: 0 0 2.5mm;
+    color: var(--siva);
+    font-size: 8.4pt;
+    line-height: 1.5;
+  }
+
+  .tabela {
+    margin-top: 3mm;
+  }
+
+  .tabela-naslov {
+    display: block;
+    margin-bottom: 1.5mm;
+    color: var(--zelena);
+  }
+
+  .tabela ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .tabela li {
+    padding: 1.1mm 0;
+    border-bottom: 0.4pt solid var(--ivica);
+    color: var(--siva);
+    font-size: 8pt;
+    line-height: 1.45;
+  }
+
+  /* ── Zadnja ───────────────────────────────────── */
+  .zadnja {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 262mm;
+  }
+
+  .zadnja-lead {
+    margin: 5mm 0 0;
+    max-width: 110mm;
+    font-size: 17pt;
+    font-weight: 500;
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+  }
+
+  .zadnja-podaci {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8mm;
+    padding-top: 5mm;
+    border-top: 0.5pt solid var(--celik);
+  }
+
+  .zadnja-podaci p {
+    margin: 1.5mm 0 0;
+  }
+
+  .veliko {
+    font-size: 15pt;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+  }
+</style>

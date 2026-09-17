@@ -1,0 +1,958 @@
+---
+import { Image, getImage } from "astro:assets";
+import Layout from "../../layouts/Layout.astro";
+import katalog from "../../../data/proizvodi.json";
+import opisi from "../../../data/opisi.json";
+import { tipProizvoda } from "../../lib/katalog";
+import { slikeZa, glavnaSlika } from "../../lib/slike";
+import { FIRMA, uSkriptu } from "../../lib/firma";
+
+export async function getStaticPaths() {
+  const { proizvodi } = katalog;
+  return proizvodi.map((p) => ({
+    params: { slug: p.slug },
+    props: { proizvod: p },
+  }));
+}
+
+const { proizvod } = Astro.props;
+const { proizvodi, kategorije } = katalog;
+
+const kategorija = kategorije.find((k) => k.slug === proizvod.kategorija);
+const podkategorija = kategorija?.podkategorije.find((x) => x.slug === proizvod.podkategorija);
+
+/**
+ * Opis je preuzet sa reference. Izvorni tekst je bio slepljen (izgubljeni
+ * prelomi redova), pa je rastavljen konzervativno i provereno znak po znak da
+ * nijedna reč nije izgubljena ni dodata. Detalji u CLAUDE.md, sekcija 5a.
+ */
+const opis = (opisi as Record<string, { sekcije: { naslov: string | null; stavke: string[] }[] }>)[
+  proizvod.slug
+];
+const sekcije = opis?.sekcije ?? [];
+
+// Prvi pasus je često samo oznaka ("MD 961-(5)") — to već stoji kao naslov.
+const jeSamoOznaka = (t: string) => /^(MD\s*)?[\d\-()\s./]+$/i.test(t.trim());
+
+const uvod = sekcije
+  .filter((s) => !s.naslov)
+  .flatMap((s) => s.stavke)
+  .filter((t) => !jeSamoOznaka(t));
+
+const tabele = sekcije.filter((s) => s.naslov && s.stavke.length);
+
+const slike = slikeZa(proizvod.slug);
+
+/**
+ * Varijante se ograničavaju na stvarnu širinu izvora. Bez toga Astro
+ * uvećava sliku iznad originala — fajl naraste, detalja nema više, a lupa
+ * deluje oštro iako radi nad naduvanim pikselima.
+ */
+/**
+ * `sizes` je namerno veće od okvira: ista slika se koristi i pod lupom, pa
+ * pregledač mora da povuče najveću varijantu — ali nikad preko širine izvora.
+ */
+const varijante = (s: ImageMetadata) =>
+  [...new Set([520, 820, 1072, s.width])].filter((w) => w <= s.width).sort((a, b) => a - b);
+const tip = tipProizvoda(proizvod.naziv);
+
+const srodni = proizvodi
+  .filter((p) => p.kategorija === proizvod.kategorija && p.slug !== proizvod.slug)
+  .slice(0, 4);
+
+const upit = `/kontakt?proizvod=${encodeURIComponent(proizvod.naziv)}`;
+
+/**
+ * META OPIS — gradi se, ne lepi.
+ *
+ * Ranije je bilo `${naziv}. ${uvod[0]}` skraćeno na 300 znakova. Izmereno
+ * na 54 strane: **19 opisa preko 160 znakova** (pretraživač ih seče) i
+ * **18 ispod 70** (ne koriste ni pola prostora u rezultatu). Uz to je
+ * prvi pasus često PONAVLJAO naziv, pa je opis glasio
+ * „Krevet za transport pacijenta manuelni 906(16). Krevet za transport
+ * pacijenta…" — isto ime dvaput u 180 znakova.
+ *
+ * Sada: naziv se izostavlja ako ga uvod već sadrži, tekst se seče na
+ * granici REČI oko 155 znakova, a prekratak se dopunjava potvrđenom
+ * rečenicom o izradi po meri (CLAUDE.md, sekcija 1 — ništa se ne izmišlja).
+ */
+const DOPUNA = "Izrada po meri ustanove — dimenzije, funkcije i boje prilagođavamo zahtevu.";
+
+const naGraniciReci = (t: string, najvise: number) => {
+  if (t.length <= najvise) return t;
+  const rez = t.slice(0, najvise);
+  const i = rez.lastIndexOf(" ");
+  return (i > najvise * 0.6 ? rez.slice(0, i) : rez).replace(/[.,;:\s]+$/, "") + "…";
+};
+
+const opisStrane = (() => {
+  const prvi = (uvod[0] ?? "").trim();
+
+  /* NAZIV IDE UVEK NA POČETAK, bez izuzetaka.
+
+     Prva verzija ga je preskakala kad ga uvodni pasus već sadrži — da se
+     ime ne ponovi dvaput. Ali braća iz iste serije dele isti uvodni pasus:
+     `906(16)` i `906(17)` imaju doslovno istu rečenicu „Krevet za transport
+     pacijenta MD 906 namenjen je…", pa su bez naziva dobila IDENTIČAN opis.
+     Izmereno: dva para duplikata.
+
+     Naziv nosi varijantu u zagradi i jedini je pouzdan razlikovni deo. Blago
+     ponavljanje je manja šteta od dva ista opisa — duplikat pretraživač
+     tretira kao znak da strane nisu različite. */
+  let t = [`${proizvod.naziv}.`, prvi].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+
+  /* Tačka pre dopune. Bez nje se rečenice spajaju:
+     „…Porođajni krevet Izrada po meri ustanove…" — izmereno na 25 strana. */
+  if (t.length < 110) t = `${t.replace(/[^.!?…]$/, "$&.")} ${DOPUNA}`.trim();
+
+  return naGraniciReci(t, 155);
+})();
+
+/* STRUKTURIRANI PODACI ZA STRANU PROIZVODA.
+
+   Dve šeme, obe od podataka koji su već na strani:
+
+   - `BreadcrumbList` — strana ima vidljivu putanju (Proizvodi / Kategorija),
+     ali je pretraživač nije mogao pročitati. Sa šemom se u rezultatu umesto
+     gole adrese prikazuje čitljiva putanja.
+   - `Product` — naziv, oznaka, fotografija, kategorija i proizvođač.
+
+   NAMERNO NEMA `offers`, `price`, `availability` ni `aggregateRating`. Te
+   podatke nemamo, a izmišljeni strukturirani podaci su razlog za ručnu
+   kaznu — ne za bolji rang.
+
+   Slika se pravi ISTIM parametrima kao `og:image` u `Layout.astro`, pa
+   Astro ponovo koristi već generisani fajl umesto da napravi novi. */
+const apsolutno = (put: string) => new URL(put, Astro.site).href;
+
+const semaSlika = slike[0]
+  ? await getImage({ src: slike[0], width: 1200, height: 630, fit: "cover", format: "jpeg", quality: 78 })
+  : null;
+
+const sema = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Početna", item: apsolutno("/") },
+        { "@type": "ListItem", position: 2, name: "Proizvodi", item: apsolutno("/proizvodi") },
+        ...(kategorija
+          ? [{ "@type": "ListItem", position: 3, name: kategorija.naziv, item: apsolutno(`/proizvodi#${kategorija.slug}`) }]
+          : []),
+        {
+          "@type": "ListItem",
+          position: kategorija ? 4 : 3,
+          name: `${proizvod.sifra} — ${tip}`,
+          item: apsolutno(Astro.url.pathname),
+        },
+      ],
+    },
+    {
+      "@type": "Product",
+      name: proizvod.naziv,
+      sku: proizvod.sifra,
+      description: opisStrane,
+      url: apsolutno(Astro.url.pathname),
+      ...(semaSlika ? { image: apsolutno(semaSlika.src) } : {}),
+      ...(kategorija
+        ? { category: podkategorija ? `${kategorija.naziv} / ${podkategorija.naziv}` : kategorija.naziv }
+        : {}),
+      brand: { "@type": "Brand", name: FIRMA.brend },
+      manufacturer: { "@id": new URL("/#firma", Astro.site).href },
+    },
+  ],
+};
+---
+
+<Layout
+  naslov={`${proizvod.sifra} — ${tip}`}
+  opis={opisStrane}
+  aktivna="proizvodi"
+  ogSlika={slike[0]}
+>
+  <script type="application/ld+json" is:inline set:html={uSkriptu(sema)} />
+  {/* ══════════════════════════ ZAGLAVLJE ══════════════════════════ */}
+  <section class="uvod">
+    <div class="shell" data-otkrij-grupa>
+      {/* Veze u putanji su niže od 24px i to je SVESNO: WCAG 2.2 (2.5.8)
+          izuzima ciljeve unutar reda teksta, a putanja je rečenica sa
+          razdvojnicima. Povećanje bi razbilo red bez dobitka. */}
+      <nav class="t-labela-sm putanja" aria-label="Putanja" data-otkrij data-smer="x">
+        <a href="/proizvodi">Proizvodi</a>
+        <span aria-hidden="true">/</span>
+        <a href={`/proizvodi#${kategorija?.slug}`}>{kategorija?.naziv}</a>
+        {
+          podkategorija && (
+            <>
+              <span aria-hidden="true">/</span>
+              <span>{podkategorija.naziv}</span>
+            </>
+          )
+        }
+      </nav>
+
+      {/* Isto ime prelaza kao na kartici u mreži — oznaka doputuje odatle.
+          Zato NEMA `data-maska`: maskirano otkrivanje bi se preklopilo sa
+          prelazom i oznaka bi dvaput krenula.
+
+          Ime ide kroz `style`, ne kroz `transition:name` — vidi obrazloženje
+          u `proizvodi.astro`. */}
+      {/* `h1` NOSI I OZNAKU I TIP.
+
+          Ranije je `h1` bio samo kataloška oznaka. Više proizvoda deli istu
+          oznaku, pa je izmereno **devet strana sa nejedinstvenim `h1`** —
+          pet različitih proizvoda imalo je `h1` koji glasi samo „48". Goli
+          broj ne opisuje ništa, a `h1` je najjači signal o temi strane.
+
+          Izgled se NE menja: oznaka ostaje u display veličini, tip ispod
+          nje u lead veličini. Menja se samo šta je unutar `h1`.
+
+          Ime prelaza je pomereno sa `h1` na unutrašnji `span` — da bi se
+          morfovala SAMO oznaka, kao i dosad. Da je ostalo na `h1`, prelaz
+          bi vukao i tip, pa bi se kadar razvukao. */}
+      <h1 class="naslov-proizvoda">
+        <span class="t-display oznaka" style={`view-transition-name: oznaka-${proizvod.slug}`}>
+          {proizvod.sifra}
+        </span>
+        <span class="t-lead tip" data-otkrij data-smer="mir">{tip}</span>
+      </h1>
+    </div>
+  </section>
+
+  {/* ══════════════════════════ PROIZVOD ══════════════════════════ */}
+  <div class="shell proizvod">
+    {/* Galerija */}
+    <div class="galerija" data-otkrij>
+      <div class="kadar svetlo" data-galerija-kadar>
+        <div class="zum" data-lupa>
+          {
+            slike.map((s, i) => (
+              <Image
+                src={s}
+                alt={`${proizvod.naziv} — prikaz ${i + 1}`}
+                widths={varijante(s)}
+                sizes="(min-width: 1000px) 92vw, 92vw"
+                loading={i === 0 ? "eager" : "lazy"}
+                class="glavna"
+                style={i === 0 ? `view-transition-name: slika-${proizvod.slug}` : undefined}
+                data-slajd={i}
+                data-izvor-w={s.width}
+                data-izvor-h={s.height}
+                data-aktivna={i === 0 ? "" : undefined}
+              />
+            ))
+          }
+        </div>
+
+        {slike.length === 0 && <p class="t-labela-sm nema-slike">Fotografija u pripremi</p>}
+        {slike.length > 0 && <span class="t-labela-sm nagovest">Pređite za uvećanje</span>}
+      </div>
+
+      {
+        slike.length > 1 && (
+          <ul class="slicice" aria-label="Ostale fotografije">
+            {slike.map((s, i) => (
+              <li>
+                <button
+                  type="button"
+                  class="slicica"
+                  aria-label={`Prikaz ${i + 1}`}
+                  aria-pressed={i === 0 ? "true" : "false"}
+                  data-slicica={i}
+                >
+                  <Image src={s} alt="" width={150} height={90} loading="lazy" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </div>
+
+    {/* Opis */}
+    <div class="opis" data-otkrij-grupa>
+      {
+        uvod.length > 0 && (
+          <div class="namena" data-otkrij>
+            {uvod.map((t) => (
+              <p>{t}</p>
+            ))}
+          </div>
+        )
+      }
+
+      <div class="akcija" data-otkrij>
+        <a href={upit} class="btn btn-primary">
+          Zatražite ponudu
+          <svg class="strelica" width="16" height="10" viewBox="0 0 16 10" fill="none" aria-hidden="true">
+            <path d="M11 1L15 5L11 9M15 5H0" stroke="currentColor" stroke-width="1.4"></path>
+          </svg>
+        </a>
+        <a href="tel:+38113348844" class="t-mono akcija-tel">013 348844</a>
+      </div>
+    </div>
+  </div>
+
+  {/* ══════════════════════ TEHNIČKI LIST ══════════════════════ */}
+  {/* Tonsko sidro ove rute. `/proizvodi/[slug]` je bila JEDINA ruta bez
+      tamnog poglavlja — 54 strane bez ijednog tamnog mesta.
+
+      Zašto baš ovde: strana proizvoda **dokazuje**, i vrhunac tog dokaza su
+      tehnički podaci. Poglavlje ide tamo gde argument doseže vrh, nikad pred
+      podnožje kao ukras (CLAUDE.md, „Tonalitet").
+
+      Zašto poglavlje NIJE samo specifikacije: izmereno, 26 od 54 proizvoda
+      nema nijednu specifikaciju, a medijana je 2 stavke. Poglavlje koje bi
+      zavisilo samo od njih bilo bi prazno na polovini kataloga. Zato ga
+      uvek nosi „Izrada po meri" — jedina tvrdnja koja važi za svih 54 i
+      ujedno ključna prodajna poenta firme. */}
+  <section class="tehnicki poglavlje-tamno" aria-labelledby="tl-naslov">
+    <div class="shell tl-unutra" data-otkrij-grupa>
+      <h2 class="t-labela tl-glava" id="tl-naslov" data-otkrij data-smer="x">Tehnički list</h2>
+
+      {
+        tabele.length > 0 && (
+          <div class="tl-blokovi">
+            {tabele.map((s) => (
+              <section class="tl-blok" data-otkrij data-smer="x">
+                <h3 class="t-labela-sm tl-blok-naslov">{s.naslov}</h3>
+                <ul class="tl-stavke">
+                  {s.stavke.map((t) => (
+                    <li>{t}</li>
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </div>
+        )
+      }
+
+      <div class:list={["tl-mera", tabele.length === 0 && "tl-mera-sama"]} data-otkrij>
+        <h3 class="tl-mera-naslov">Izrada po meri</h3>
+        <p class="tl-mera-tekst">
+          Dimenzije, funkcije, boje i dizajn prilagođavamo zahtevu ustanove.
+        </p>
+        <ul class="tl-oznake">
+          <li class="t-labela-sm">Dimenzije</li>
+          <li class="t-labela-sm">Funkcije</li>
+          <li class="t-labela-sm">Boje</li>
+          <li class="t-labela-sm">Dizajn</li>
+        </ul>
+        <p class="t-mono-sm tl-materijali">
+          Čelični profili · Eko-koža · ABS · Aluminijum
+        </p>
+      </div>
+    </div>
+  </section>
+
+  {/* ══════════════════════════ SRODNO ══════════════════════════ */}
+  {
+    srodni.length > 0 && (
+      <section class="section srodno">
+        <div class="shell" data-otkrij-grupa>
+          <div class="srodno-glava">
+            <h2 class="t-h2" data-otkrij data-maska>
+              Iz iste kategorije
+            </h2>
+            <a href={`/proizvodi#${kategorija?.slug}`} class="t-labela srodno-veza" data-otkrij>
+              Sve iz „{kategorija?.naziv}"
+            </a>
+          </div>
+
+          <ul class="mreza">
+            {srodni.map((p) => {
+              const g = glavnaSlika(p.slug);
+              return (
+                <li class="kartica" data-otkrij>
+                  <a href={`/proizvodi/${p.slug}`} class="kartica-veza">
+                    <div class="kartica-vizual svetlo">
+                      {g ? (
+                        <Image
+                          src={g}
+                          alt={p.naziv}
+                          widths={[280, 460]}
+                          sizes="(min-width: 1000px) 22vw, 45vw"
+                          loading="lazy"
+                          class="kartica-slika"
+                          style={`view-transition-name: slika-${p.slug}`}
+                        />
+                      ) : (
+                        <div class="placeholder" />
+                      )}
+                    </div>
+                    <div class="kartica-tekst">
+                      <span class="kartica-oznaka" style={`view-transition-name: oznaka-${p.slug}`}>
+                        {p.sifra}
+                      </span>
+                      <span class="kartica-tip">{tipProizvoda(p.naziv)}</span>
+                    </div>
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </section>
+    )
+  }
+</Layout>
+
+<style>
+  .uvod {
+    padding-top: clamp(7rem, 12vw, 10rem);
+    padding-bottom: clamp(1.5rem, 3vw, 2.5rem);
+  }
+
+  .putanja {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    color: var(--color-siva);
+    margin-bottom: clamp(1.25rem, 2.5vw, 2rem);
+  }
+
+  .putanja a:hover {
+    color: var(--color-plava);
+  }
+
+  /* `h1` je sada omotač oko dva bloka; sav izgled nose deca, pa sam
+     naslov nema ni veličinu ni razmak. */
+  .naslov-proizvoda {
+    margin: 0;
+    font: inherit;
+    letter-spacing: normal;
+  }
+
+  .oznaka {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tip {
+    display: block;
+    color: var(--color-celik);
+    font-weight: 500;
+    max-width: 40ch;
+  }
+
+  /* ───────────────── Proizvod ───────────────── */
+  /* I glavni kadar galerije nosi bazen svetla koji viri 18% van sebe —
+     mereno 43px prelivanja na 390px. `clip` ide na omotač, NIKAD na
+     `.kadar`: tamo bi odsekao sam bazen svetla. */
+  .proizvod {
+    overflow-x: clip;
+
+    display: grid;
+    gap: clamp(2.5rem, 5vw, 4.5rem);
+    padding-bottom: clamp(3rem, 6vw, 5rem);
+    align-items: start;
+  }
+
+  .galerija {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  /* Sve fotografije stoje jedna preko druge u istom okviru — prebacivanje
+     tada ne pomera ništa ispod. Odnos 5:3 je odnos originala. */
+  .kadar {
+    position: relative;
+    width: 100%;
+    padding-block: clamp(0.75rem, 2vw, 1.5rem);
+  }
+
+  /* Omotač seče uvećanu sliku. Ne može na `.kadar` — tamo bi `overflow`
+     odsekao i bazen svetla koji se širi van okvira. */
+  /* Odnos drži OMOTAČ, a slike su u njemu apsolutne. Kad su slike u toku,
+     uspravna fotografija svojim odnosom razvuče red i okvir naraste na
+     643×1072 umesto 643×385. */
+  .zum {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 5 / 3;
+    overflow: hidden;
+  }
+
+  .glavna {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    opacity: 0;
+    /* `transform-origin` NIJE u listi prelaza — mora da prati pokazivač
+       trenutno. Prelazi se samo razmera, pa ulazak i izlazak budu glatki. */
+    transition:
+      opacity 0.4s var(--ease-sala),
+      transform 0.32s var(--ease-sprava);
+  }
+
+  .glavna[data-aktivna] {
+    opacity: 1;
+  }
+
+  .nagovest {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    color: var(--color-siva);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s var(--ease-sala);
+  }
+
+  /* Lupa samo tamo gde postoji pravi pokazivač — na dodir nema hovera. */
+  @media (hover: hover) and (pointer: fine) {
+    .zum {
+      cursor: zoom-in;
+    }
+
+    .kadar:hover .nagovest {
+      opacity: 0.7;
+    }
+
+    .zum[data-zum] .glavna[data-aktivna] {
+      /* Faktor se računa po slici u skripti — izvori idu od 614 do 1772 px,
+         pa bi jedna fiksna vrednost bila premala za jedne i mutna za druge. */
+      transform: scale(var(--zf, 1.6));
+      transform-origin: var(--zx, 50%) var(--zy, 50%);
+    }
+
+    .kadar:has(.zum[data-zum]) .nagovest {
+      opacity: 0;
+    }
+  }
+
+  .nema-slike {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    margin: 0;
+    color: var(--color-siva);
+    opacity: 0.6;
+  }
+
+  .slicice {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+
+  .slicica {
+    display: block;
+    width: 74px;
+    padding: 0.3rem;
+    background: var(--color-bela);
+    border: 1px solid var(--color-ivica);
+    transition:
+      border-color 0.45s var(--ease-sala),
+      transform 0.45s var(--ease-sala);
+  }
+
+  .slicica:hover {
+    transform: translateY(-2px);
+    border-color: var(--color-siva);
+  }
+
+  .slicica[aria-pressed="true"] {
+    border-color: var(--color-plava);
+    box-shadow: inset 0 0 0 1px var(--color-plava);
+  }
+
+  .slicica :global(img) {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+  }
+
+  /* ───────────────── Opis ───────────────── */
+  .opis {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(1.75rem, 3vw, 2.5rem);
+  }
+
+  .namena {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    font-size: 1.0625rem;
+    line-height: 1.65;
+  }
+
+  .namena p {
+    margin: 0;
+  }
+
+  .blok {
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--color-ivica);
+  }
+
+  .blok-naslov {
+    margin: 0 0 1rem;
+    color: var(--color-zelena);
+  }
+
+  .stavke {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Hairline između stavki umesto tačkica — isti jezik kao ostatak sajta. */
+  .stavke li {
+    padding-block: 0.6rem;
+    border-bottom: 1px solid var(--color-ivica);
+    color: var(--color-siva);
+    font-size: 1.0625rem;
+    line-height: 1.6;
+  }
+
+  .akcija {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.5rem;
+    padding-top: 0.5rem;
+  }
+
+  .akcija-tel {
+    color: var(--color-plava);
+  }
+
+  /* ───────────────── Tehnički list ───────────────── */
+  .tehnicki {
+    margin-top: clamp(3.5rem, 7vw, 6rem);
+    /* Bazen svetla galerije viri 18% van kadra; bez ovoga na uskom ekranu
+       pomera stranu. Isto pravilo kao `.srodno`. */
+    overflow-x: clip;
+  }
+
+  .tl-unutra {
+    padding-block: clamp(2.5rem, 5vw, 4rem);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(2rem, 4vw, 3rem);
+  }
+
+  /* `.zaglavlje-labela` iz globala crta crtu u boji čelika — na čeliku bi
+     bila nevidljiva, pa ovde ide svoja. */
+  .tl-glava {
+    margin: 0;
+    padding-top: 0.9rem;
+    border-top: 1px solid rgba(244, 246, 247, 0.28);
+  }
+
+  /* Dva bloka („Tehničke karakteristike" i „Dimenzije") stoje jedan pored
+     drugog; kolone NISU jednake jer ni sadržaj nije — karakteristike nose
+     duže rečenice, dimenzije kratke brojeve. */
+  .tl-blokovi {
+    display: grid;
+    gap: clamp(1.75rem, 3.5vw, 3rem);
+  }
+
+  .tl-blok-naslov {
+    margin: 0 0 0.9rem;
+  }
+
+  .tl-stavke {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .tl-stavke li {
+    padding-block: 0.7rem;
+    border-bottom: 1px solid rgba(244, 246, 247, 0.16);
+    font-size: 1.0625rem;
+    line-height: 1.6;
+  }
+
+  .tl-stavke li:first-child {
+    border-top: 1px solid rgba(244, 246, 247, 0.16);
+  }
+
+  /* ── Izrada po meri ── */
+  .tl-mera {
+    display: grid;
+    gap: 0.9rem clamp(1.5rem, 3vw, 2.5rem);
+    padding-top: clamp(1.5rem, 3vw, 2.25rem);
+    border-top: 1px solid rgba(244, 246, 247, 0.28);
+  }
+
+  .tl-mera-naslov {
+    margin: 0;
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+    font-size: var(--text-h3);
+    font-weight: 500;
+    letter-spacing: -0.012em;
+  }
+
+  .tl-mera-tekst {
+    margin: 0;
+    max-width: 46ch;
+    font-size: var(--text-lead);
+  }
+
+  .tl-oznake {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .tl-oznake li {
+    padding: 0.35rem 0.7rem;
+    border: 1px solid rgba(244, 246, 247, 0.22);
+  }
+
+  /* Udvojena klasa, ne `!important`: pravilo za tekst u tamnom poglavlju
+     je `.poglavlje-tamno.poglavlje-tamno :is(p, …)` = specifičnost 0,2,1.
+     Udvajanjem se dobija 0,3,0 i nadjačava se pošteno. */
+  .tehnicki .tl-materijali.tl-materijali {
+    margin: 0;
+    color: rgba(244, 246, 247, 0.55);
+  }
+
+  /* Kad proizvod NEMA nijednu specifikaciju (26 od 54), ovaj blok sam nosi
+     poglavlje — pa dobija naslovnu veličinu umesto podnaslovne. */
+  .tl-mera-sama .tl-mera-naslov {
+    font-size: var(--text-h2);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  .tl-mera-sama .tl-mera-tekst {
+    font-size: clamp(1.25rem, 1.8vw, 1.5rem);
+    max-width: 30ch;
+  }
+
+  /* ───────────────── Srodno ───────────────── */
+  /* Isto kao na `/proizvodi`: bazen svetla kartice viri 18% van nje i na
+     uskom ekranu pomera stranu. Mereno 43px. */
+  .srodno {
+    overflow-x: clip;
+
+    border-top: 1px solid var(--color-ivica);
+  }
+
+  .srodno-glava {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: clamp(2rem, 4vw, 3rem);
+  }
+
+  .srodno-glava h2 {
+    margin: 0;
+  }
+
+  /* `min-height` zbog WCAG 2.2 (2.5.8): izmereno 18px visine, minimum je 24.
+     Ovo je SAMOSTALNA veza u zaglavlju sekcije, pa izuzetak za linkove
+     unutar rečenice (kakav važi za putanju iznad) ovde ne važi. */
+  .srodno-veza {
+    color: var(--color-plava);
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+  }
+
+  .mreza {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: clamp(1.75rem, 3vw, 2.5rem) clamp(1.25rem, 2vw, 2rem);
+  }
+
+  .kartica-veza {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .kartica-vizual {
+    padding-block: clamp(0.5rem, 1.5vw, 1rem);
+    transition: transform 0.7s var(--ease-sala);
+  }
+
+  .kartica:hover .kartica-vizual {
+    transform: translateY(-6px) scale(1.015);
+  }
+
+  .kartica-slika,
+  .placeholder {
+    width: 100%;
+    aspect-ratio: 5 / 3;
+    object-fit: contain;
+  }
+
+  .kartica-tekst {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--color-ivica);
+  }
+
+  .kartica-oznaka {
+    font-size: clamp(1.125rem, 1.6vw, 1.375rem);
+    font-weight: 500;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    font-variant-numeric: tabular-nums;
+    transition: color 0.3s var(--ease-sala);
+  }
+
+  .kartica:hover .kartica-oznaka {
+    color: var(--color-plava);
+  }
+
+  .kartica-tip {
+    color: var(--color-siva);
+    font-size: 0.8125rem;
+    line-height: 1.45;
+  }
+
+  @media (min-width: 1000px) {
+    .proizvod {
+      grid-template-columns: 1.05fr 0.95fr;
+    }
+    .galerija {
+      position: sticky;
+      top: 120px;
+    }
+    .mreza {
+      grid-template-columns: repeat(4, 1fr);
+    }
+    /* Karakteristike nose duže rečenice od dimenzija — kolone po težini
+       sadržaja, ne `1fr 1fr` (CLAUDE.md, „Mreže"). */
+    .tl-blokovi:has(> :nth-child(2)) {
+      grid-template-columns: 1.25fr 0.75fr;
+    }
+    .tl-mera {
+      grid-template-columns: 0.9fr 1.1fr;
+      align-items: start;
+    }
+    .tl-mera-naslov {
+      grid-row: span 3;
+    }
+  }
+</style>
+
+<script>
+  import { naSvakojStrani } from "../../scripts/zivot";
+
+  /* Telo strane se menja bez novog učitavanja (View Transitions), pa se
+     ovo mora pokrenuti iznova na svakom prikazu. */
+  naSvakojStrani(() => {
+
+    /**
+     * Lupa: slika se uvećava unutar okvira i prati pokazivač, kao na referenci
+     * (WooCommerce `zoom_enabled`). Bez biblioteke — dovoljni su
+     * `transform-origin` i dva svojstva.
+     */
+    {
+      const okvir = document.querySelector<HTMLElement>("[data-lupa]");
+      const finPokazivac = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+      if (okvir && finPokazivac) {
+        /**
+         * Najveće uvećanje pri kom slika ostaje oštra.
+         *
+         * Dve zamke:
+         *
+         * 1. `naturalWidth` se NE sme koristiti. Kad slika ima `srcset` sa `w`
+         *    deskriptorima, pregledač po specifikaciji vraća veličinu
+         *    korigovanu gustinom, ne piksele fajla — za sliku od 1024 px
+         *    prijavi 1324. Prave dimenzije zna build i šalje ih kao atribute.
+         *
+         * 2. Računa se od ŠIRINE PRIKAZANOG SADRŽAJA, ne od širine elementa:
+         *    `object-fit: contain` uspravnu sliku u pejzažnom okviru jako
+         *    smanji, pa ona ima znatno više rezerve nego široka.
+         */
+        const faktorZa = (slika: HTMLImageElement) => {
+          const r = slika.getBoundingClientRect();
+          const izvorW = Number(slika.dataset.izvorW);
+          const izvorH = Number(slika.dataset.izvorH);
+          if (!izvorW || !izvorH || !r.width) return 1.6;
+
+          const prikazanaSirina = Math.min(r.width, r.height * (izvorW / izvorH));
+          return Math.min(2.6, Math.max(1.4, izvorW / prikazanaSirina));
+        };
+
+        const osveziFaktor = () => {
+          const aktivna = okvir.querySelector<HTMLImageElement>(".glavna[data-aktivna]");
+          if (aktivna) okvir.style.setProperty("--zf", String(faktorZa(aktivna).toFixed(2)));
+        };
+
+        const pomeri = (e: PointerEvent) => {
+          const r = okvir.getBoundingClientRect();
+          const x = ((e.clientX - r.left) / r.width) * 100;
+          const y = ((e.clientY - r.top) / r.height) * 100;
+          okvir.style.setProperty("--zx", `${Math.min(100, Math.max(0, x))}%`);
+          okvir.style.setProperty("--zy", `${Math.min(100, Math.max(0, y))}%`);
+        };
+
+        okvir.addEventListener("pointerenter", (e) => {
+          if (e.pointerType !== "mouse") return;
+          osveziFaktor();
+          pomeri(e);
+          okvir.setAttribute("data-zum", "");
+        });
+
+        okvir.addEventListener("pointermove", (e) => {
+          if (e.pointerType !== "mouse" || !okvir.hasAttribute("data-zum")) return;
+          pomeri(e);
+        });
+
+        okvir.addEventListener("pointerleave", () => {
+          okvir.removeAttribute("data-zum");
+          okvir.style.removeProperty("--zx");
+          okvir.style.removeProperty("--zy");
+        });
+      }
+    }
+
+    /**
+     * Prebacivanje fotografija. Sve stoje u istom okviru pa se menja samo
+     * vidljivost — ništa se ne pomera, ni na jednoj širini.
+     */
+    const slajdovi = [...document.querySelectorAll<HTMLElement>("[data-slajd]")];
+    const dugmad = [...document.querySelectorAll<HTMLButtonElement>("[data-slicica]")];
+
+    if (slajdovi.length > 1 && dugmad.length) {
+      let tekuci = 0;
+
+      const prikazi = (i: number) => {
+        if (i === tekuci || !slajdovi[i]) return;
+        slajdovi[tekuci]?.removeAttribute("data-aktivna");
+        dugmad[tekuci]?.setAttribute("aria-pressed", "false");
+        slajdovi[i].setAttribute("data-aktivna", "");
+        dugmad[i]?.setAttribute("aria-pressed", "true");
+        tekuci = i;
+      };
+
+      dugmad.forEach((d, i) => {
+        d.addEventListener("click", () => prikazi(i));
+        d.addEventListener("mouseenter", () => prikazi(i));
+      });
+    }
+  });
+</script>

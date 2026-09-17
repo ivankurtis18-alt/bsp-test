@@ -1,0 +1,295 @@
+---
+import "../styles/global.css";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import { ClientRouter } from "astro:transitions";
+import { getImage } from "astro:assets";
+import ogPodrazumevana from "../assets/hero-hala.jpg";
+import { jsonLdFirme } from "../lib/firma";
+
+interface Props {
+  naslov: string;
+  opis: string;
+  aktivna?: "pocetna" | "proizvodi" | "katalog" | "o-nama" | "kontakt";
+  /** Slika za deljenje na mrežama. Bez nje ide fotografija hale. */
+  ogSlika?: ImageMetadata;
+}
+
+const { naslov, opis, aktivna, ogSlika } = Astro.props;
+const punNaslov = `${naslov} — BSP`;
+
+/* SLIKA ZA DELJENJE.
+
+   Bez nje link deljen na Viberu, WhatsAppu ili LinkedInu izgleda kao go
+   tekst — što na B2B sajtu izgleda kao da sajt nije dovršen.
+
+   Ne pravi se nova grafika: uzima se fotografija koja na toj strani ionako
+   stoji (proizvod na svojoj strani, hala svuda drugde) i seče na 1200×630,
+   odnos koji tražе sve mreže. `jpeg`, ne `webp` — deo čitača pregleda još
+   uvek ne prikazuje WebP. */
+const og = await getImage({
+  src: ogSlika ?? ogPodrazumevana,
+  width: 1200,
+  height: 630,
+  fit: "cover",
+  format: "jpeg",
+  quality: 78,
+});
+
+const punaAdresa = (put: string) => new URL(put, Astro.site).href;
+const kanonska = punaAdresa(Astro.url.pathname);
+
+/* PAŽNJA: između `<!doctype html>` i `<html>` NE SME stajati ništa — ni
+   Astro komentar. Kad je tu stajao, Astro je prestao da prepoznaje `<html>`
+   kao koren i IZBACIO ga iz builda; pregledač je tada sam pravio prazan
+   `<html>`, bez klase `no-js`, pa je cela grana „bez JS-a" pala i sadržaj
+   je ostajao na `opacity: 0`. Izmereno: 21 nevidljiv element na `/o-nama`.
+
+   `lang="sr-Latn"`, ne golo `sr`: sadržaj je latinica, a `sr` kod čitača
+   ekrana povlači ćirilična pravila izgovora. Puna BCP-47 oznaka je i uslov
+   da `hyphens: auto` uzme pravi rečnik. */
+---
+
+<!doctype html>
+<html lang="sr-Latn" class="no-js">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{punNaslov}</title>
+    <meta name="description" content={opis} />
+    <link rel="canonical" href={kanonska} />
+
+    {/* SVG je glavna ikona (oštra na svakoj veličini), PNG je rezerva za
+        klijente koji SVG ikone ne podržavaju, a `apple-touch-icon` je
+        obavezan da prečica na iOS početnom ekranu ne bude prazan kvadrat. */}
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#0D1B22" />
+
+    {
+      /* U razvoju se stranica nikad ne servira iz keša — inače se posle izmena
+         gleda verzija koja više ne postoji. U produkciji ovo ne ide. */
+      import.meta.env.DEV && (
+        <>
+          <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+          <meta http-equiv="Pragma" content="no-cache" />
+          <meta http-equiv="Expires" content="0" />
+        </>
+      )
+    }
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="BSP" />
+    <meta property="og:title" content={punNaslov} />
+    <meta property="og:description" content={opis} />
+    <meta property="og:locale" content="sr_RS" />
+    <meta property="og:url" content={kanonska} />
+    <meta property="og:image" content={punaAdresa(og.src)} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={`BSP — ${naslov}`} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={punNaslov} />
+    <meta name="twitter:description" content={opis} />
+    <meta name="twitter:image" content={punaAdresa(og.src)} />
+
+    {/* STRUKTURIRANI PODACI.
+
+        Firma ima jednu lokaciju, potvrđenu adresu, telefon i radno vreme —
+        `LocalBusiness` je zato najjeftiniji SEO dobitak koji postoji i utiče
+        na prikaz u pretrazi i na mapama.
+
+        U šemi je ISKLJUČIVO ono što je potvrđeno (CLAUDE.md, sekcija 1).
+        Ništa se ne izmišlja: nema ocena, nema cena, nema broja zaposlenih. */}
+    <script type="application/ld+json" is:inline set:html={jsonLdFirme(String(Astro.site))} />
+
+    {/*
+      Fontovi se hostuju LOKALNO (`public/fonts/`, generisano sa `npm run fontovi`).
+      Ranije je stajao `<link>` ka fonts.googleapis.com — to je blokiralo
+      iscrtavanje zahtevom ka tuđem domenu, uz dodatni DNS i TLS pre nego što
+      se ijedno slovo pojavi.
+
+      Unapred se učitavaju samo dva isečka koja stvarno drže prvi ekran:
+      display pismo i osnovno telo, oba u `latin` podskupu. `latin-ext`
+      (dijakritika) stiže odmah za njima, a `font-display: swap` znači da se
+      tekst čita i pre nego što fontovi stignu.
+    */}
+    <link rel="preload" href="/fonts/bricolage-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin />
+
+    {/*
+      Klijentsko rutiranje. Kartica proizvoda i njegova strana dele
+      `view-transition-name`, pa pri kliku fotografija i kataloška oznaka
+      PUTUJU iz mreže na stranu proizvoda umesto da se strana prebaci.
+
+      Posledica koja se lako previdi: telo strane se menja bez novog
+      učitavanja, pa se skripte strana ne pokreću same. Svaka ide kroz
+      `naSvakojStrani` iz `src/scripts/zivot.ts`.
+    */}
+    <ClientRouter />
+
+    <script is:inline>
+      // Skini .no-js pre prvog paint-a da reveal stanja ne bleskaju.
+      (function () {
+        function oznaci() {
+          document.documentElement.classList.remove("no-js");
+          if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+            document.documentElement.classList.add("motion-off");
+          }
+        }
+        oznaci();
+        // Swap prepisuje atribute `<html>` iz novog dokumenta, a tamo `no-js`
+        // ponovo stoji. Bez ovoga bi posle prve navigacije sve ostalo
+        // zaključano u no-js grani — sadržaj vidljiv, ali bez ijednog otkrivanja.
+        document.addEventListener("astro:after-swap", oznaci);
+
+        /* OSVEŽAVANJE VRAĆA NA VRH.
+
+           Pregledač podrazumevano pamti poziciju skrola i posle F5 te vraća
+           tamo gde si bio. Na ovom sajtu to promašuje: hero ima otvaranje
+           blendom koje se odigra u pozadini dok gledaš sredinu strane, a
+           lepljive sekcije se vraćaju u zatečeno stanje bez uvoda.
+
+           PREKIDAČ `scrollRestoration` NIJE DOVOLJAN, i nije ni glavni.
+           On gasi vraćanje koje radi PREGLEDAČ. Poziciju ovde vraća Astro-v
+           `ClientRouter`: on je čuva u svom `history.state` i pri učitavanju
+           radi `scrollTo(history.state.scrollX, history.state.scrollY)`.
+           Zato se na izlasku nuluje TAJ zapis — router tada nema šta da
+           vrati. `index` mora da preživi, njime router prati smer kretanja.
+
+           `scrollTo(0,0)` ostaje za slučaj bez `ClientRouter`-a (tada nema
+           `history.state`), ali sam po sebi ne rešava ništa: router ne čita
+           živu poziciju nego stanje. */
+        if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+
+        var naVrh = function () {
+          if (history.state) {
+            history.replaceState(
+              Object.assign({}, history.state, { scrollX: 0, scrollY: 0 }),
+              ""
+            );
+          }
+          window.scrollTo(0, 0);
+        };
+        /* Oba: `pagehide` je jedini pouzdan na mobilnom Safariju, a
+           `beforeunload` hvata slučajeve kad `pagehide` ne stigne. */
+        window.addEventListener("beforeunload", naVrh);
+        window.addEventListener("pagehide", naVrh);
+      })();
+    </script>
+  </head>
+
+  <body>
+    <a href="#sadrzaj" class="preskoci t-mono">Preskoči na sadržaj</a>
+
+    <Header aktivna={aktivna} />
+    {/* `tabindex="-1"` je USLOV da veza „Preskoči na sadržaj" radi.
+
+        Bez njega pregledač ne može da fokusira `<main>`: hash se promeni,
+        strana se pomeri, ali `document.activeElement` ostane `<body>` —
+        pa sledeći Tab vraća korisnika u zaglavlje i preskakanje nema
+        efekta. Izmereno pre ispravke: fokus posle Entera = BODY.
+
+        `-1` znači „ne ulazi u redosled Taba, ali može da primi fokus
+        programski" — dakle ne dodaje novo zaustavljanje. */}
+    <main id="sadrzaj" tabindex="-1">
+      <slot />
+    </main>
+    <Footer aktivna={aktivna} />
+
+    {/* Povratak na vrh. Ide kroz Lenis da bi se penjanje glačalo isto kao i
+        skrol.
+
+        STOJI NA KRAJU `<body>`, NAMERNO. Ranije je bio odmah posle veze
+        „Preskoči na sadržaj", pa je bio **drugo zaustavljanje Taba na
+        strani** — pre glavne navigacije. Uz to je, kad se pojavi, u DOM-u
+        ispred svega, pa se unapred nije ni mogao dohvatiti: do njega se
+        stizalo samo Shift+Tabom unazad. Na kraju tela je poslednje
+        zaustavljanje, tačno kao što i izgleda na ekranu. */}
+    <button type="button" class="na-vrh" data-na-vrh aria-label="Nazad na vrh strane" hidden>
+      <svg width="15" height="18" viewBox="0 0 15 18" fill="none" aria-hidden="true">
+        <path d="M7.5 17V1M1 7.5L7.5 1L14 7.5" stroke="currentColor" stroke-width="1.5"></path>
+      </svg>
+    </button>
+
+    <script>
+      import "../scripts/motion";
+    </script>
+
+    <style>
+      .preskoci {
+        position: absolute;
+        left: 1rem;
+        top: -100px;
+        z-index: 200;
+        background: var(--color-celik);
+        color: #fff;
+        padding: 0.85rem 1.25rem;
+        transition: top 0.2s ease;
+      }
+      .preskoci:focus {
+        top: 1rem;
+      }
+      /* ── Povratak na vrh ──────────────────────────────────────────────
+         Kvadrat, ne krug: sajt je svuda oštar. Stoji u donjem desnom uglu,
+         iznad sadržaja ali ispod fiksnog zaglavlja. */
+      /* `visibility`, NE samo `opacity`.
+
+         `opacity: 0` skriva element OKU, ali ga ostavlja u redosledu Taba.
+         Izmereno pre ispravke: drugi pritisak Taba na vrhu strane odvodio
+         je fokus na ovo dugme dok je `opacity` bio 0 — fokus bukvalno
+         nestane sa ekrana, korisnik ne zna gde je, a Enter ga odvede na
+         vrh bez objašnjenja (WCAG 2.4.7).
+
+         `visibility: hidden` uklanja element iz redosleda Taba, a za
+         razliku od `display: none` može se animirati — pa prelaz ostaje.
+         Zato ide i u `transition`, sa `0s` odloženim na pojavljivanje i
+         odloženim do kraja pri nestajanju. */
+      .na-vrh {
+        position: fixed;
+        visibility: hidden;
+        right: clamp(1rem, 2.5vw, 2rem);
+        bottom: clamp(1rem, 2.5vw, 2rem);
+        z-index: 40;
+        display: grid;
+        place-items: center;
+        width: 46px;
+        height: 46px;
+        border: 1px solid var(--color-ivica);
+        background: var(--color-bela);
+        color: var(--color-celik);
+        cursor: pointer;
+        opacity: 0;
+        transform: translateY(8px);
+        transition:
+          visibility 0s linear 0.4s,
+          opacity 0.4s var(--ease-sprava),
+          transform 0.4s var(--ease-sprava),
+          background-color 0.34s var(--ease-sprava),
+          border-color 0.34s var(--ease-sprava),
+          color 0.34s var(--ease-sprava);
+      }
+
+      .na-vrh[data-vidljivo] {
+        visibility: visible;
+        opacity: 1;
+        transform: none;
+        transition-delay: 0s;
+      }
+
+      .na-vrh:hover,
+      .na-vrh:focus-visible {
+        background: var(--color-pritisnuto);
+        border-color: var(--color-pritisnuto);
+        color: var(--color-sala);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .na-vrh {
+          transition: none;
+        }
+      }
+    </style>
+  </body>
+</html>

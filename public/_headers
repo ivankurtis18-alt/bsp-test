@@ -1,0 +1,43 @@
+# Bezbednosna zaglavlja i politika keša.
+#
+# Format razumeju Netlify i Cloudflare Pages. Na drugim hostovima isti
+# sadržaj treba prepisati u njihovu konfiguraciju:
+#   Vercel  -> "headers" u vercel.json
+#   Apache  -> Header set ... u .htaccess
+#   nginx   -> add_header ... u server bloku
+#
+# Bez ovoga sajt pada na svakoj automatskoj bezbednosnoj proveri
+# (securityheaders.com, Mozilla Observatory), a posetioci iznova povlače
+# fontove i CSS jer nema Cache-Control.
+
+/*
+  # Pregledač ne sme da pogađa tip fajla — sprečava da se npr. otpremljena
+  # slika protumači kao skripta.
+  X-Content-Type-Options: nosniff
+  # Puna adresa se šalje samo u okviru istog porekla; drugima ide samo domen.
+  Referrer-Policy: strict-origin-when-cross-origin
+  # Sajt se ne sme uokviriti sa tuđeg domena (clickjacking).
+  X-Frame-Options: SAMEORIGIN
+  # Ništa od ovoga sajtu ne treba.
+  Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=(), usb=()
+  # Godinu dana HTTPS-a. BEZ `includeSubDomains` namerno: ako klijent ima
+  # poddomen bez sertifikata (mail, webmail), to bi ga oborilo.
+  Strict-Transport-Security: max-age=31536000
+
+# Fajlovi sa hešom u imenu — sadržaj im se nikad ne menja pod istim imenom.
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# HTML se NE keširа dugo: nova verzija sajta mora da stigne odmah.
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+/
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Katalog se menja retko, ali se menja.
+/katalog/*
+  Cache-Control: public, max-age=86400
