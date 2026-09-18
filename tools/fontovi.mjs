@@ -31,7 +31,7 @@ for (const p of porodice) {
     const osa = b.match(/font-variation-settings:[^;]+;/)?.[0] ?? "";
     const opsz = b.match(/font-optical-sizing:[^;]+;/)?.[0] ?? "";
     const wght = b.match(/font-weight:\s*([^;]+);/)?.[1]?.trim() ?? "400";
-    css += `@font-face {\n  font-family: "${p.ime}";\n  font-style: normal;\n  font-weight: ${wght};\n  font-display: swap;\n  src: url("/fonts/${ime}") format("woff2");\n  unicode-range: ${ur};\n  ${osa}${opsz}\n}\n\n`;
+    css += `@font-face {\n  font-family: "${p.ime}";\n  font-style: normal;\n  font-weight: ${wght};\n  font-display: swap;\n  src: url("../fonts/${ime}") format("woff2");\n  unicode-range: ${ur};\n  ${osa}${opsz}\n}\n\n`;
     console.log(`${ime.padEnd(26)} ${(buf.length/1024).toFixed(1)} KB   ${wght}`);
   }
 }

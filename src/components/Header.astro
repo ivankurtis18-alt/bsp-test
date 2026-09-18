@@ -1,4 +1,5 @@
 ---
+import { put } from "../lib/putanja";
 import katalog from "../../data/proizvodi.json";
 
 interface Props {
@@ -7,11 +8,11 @@ interface Props {
 const { aktivna } = Astro.props;
 
 const veze = [
-  { id: "pocetna", naziv: "Početna", href: "/" },
-  { id: "proizvodi", naziv: "Proizvodi", href: "/proizvodi" },
-  { id: "katalog", naziv: "Katalog", href: "/katalog" },
-  { id: "o-nama", naziv: "O nama", href: "/o-nama" },
-  { id: "kontakt", naziv: "Kontakt", href: "/kontakt" },
+  { id: "pocetna", naziv: "Početna", href: put("/") },
+  { id: "proizvodi", naziv: "Proizvodi", href: put("/proizvodi") },
+  { id: "katalog", naziv: "Katalog", href: put("/katalog") },
+  { id: "o-nama", naziv: "O nama", href: put("/o-nama") },
+  { id: "kontakt", naziv: "Kontakt", href: put("/kontakt") },
 ] as const;
 
 // Mobilni meni nosi i ceo katalog — do kategorije se stiže iz jednog dodira,
@@ -25,7 +26,7 @@ const kategorije = katalog.kategorije.map((k) => ({
 
 <header class="zaglavlje" data-zaglavlje>
   <div class="shell traka">
-    <a href="/" class="znak" aria-label="BSP — početna">
+    <a href={put("/")} class="znak" aria-label="BSP — početna">
       <span class="znak-slova">BSP</span>
       <span class="znak-crta" aria-hidden="true"></span>
     </a>
@@ -99,7 +100,7 @@ const kategorije = katalog.kategorije.map((k) => ({
       <ul class="meni-lista">
         {kategorije.map((k) => (
           <li>
-            <a href={`/proizvodi#${k.slug}`} class="meni-kat">
+            <a href={put(`/proizvodi#${k.slug}`)} class="meni-kat">
               <span>{k.naziv}</span>
               <span class="t-mono-sm meni-kat-broj">{k.broj}</span>
             </a>

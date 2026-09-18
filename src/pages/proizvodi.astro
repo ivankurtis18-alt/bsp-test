@@ -1,4 +1,5 @@
 ---
+import { put } from "../lib/putanja";
 import { Image } from "astro:assets";
 import Layout from "../layouts/Layout.astro";
 import SlikaProizvoda from "../components/SlikaProizvoda.astro";
@@ -63,7 +64,7 @@ const sekcije = kategorije.map((k) => {
           Pedeset četiri proizvoda u dvanaest kategorija. Sve je polazna tačka — dimenzije,
           funkcije, boje i dizajn prilagođavamo vašoj ustanovi.
         </p>
-        <a href="/katalog" class="btn btn-ghost" data-otkrij>
+        <a href={put("/katalog")} class="btn btn-ghost" data-otkrij>
           Katalog u PDF-u
           <svg class="strelica" width="16" height="10" viewBox="0 0 16 10" fill="none" aria-hidden="true">
             <path d="M11 1L15 5L11 9M15 5H0" stroke="currentColor" stroke-width="1.4"></path>
@@ -148,7 +149,7 @@ const sekcije = kategorije.map((k) => {
                     const slika = glavnaSlika(p.slug);
                     return (
                       <li class="kartica">
-                        <a href={`/proizvodi/${p.slug}`} class="kartica-veza">
+                        <a href={put(`/proizvodi/${p.slug}`)} class="kartica-veza">
                           <div class="kartica-vizual svetlo">
                             {/* Ime prelaza spaja karticu sa stranom proizvoda:
                                 fotografija i oznaka putuju iz mreže na stranu
@@ -221,7 +222,7 @@ const sekcije = kategorije.map((k) => {
         Kataloške oznake su polazna tačka. Pošaljite dimenzije i funkcije koje tražite.
       </p>
       <div class="traka-akcije">
-        <a href="/kontakt" class="btn btn-primary">
+        <a href={put("/kontakt")} class="btn btn-primary">
           Pišite nam
           <svg class="strelica" width="16" height="10" viewBox="0 0 16 10" fill="none" aria-hidden="true">
             <path d="M11 1L15 5L11 9M15 5H0" stroke="currentColor" stroke-width="1.4"></path>

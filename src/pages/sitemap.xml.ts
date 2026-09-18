@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import katalog from "../../data/proizvodi.json";
+import { put } from "../lib/putanja";
 
 /**
  * Mapa sajta.
@@ -39,7 +40,7 @@ export const GET: APIRoute = ({ site }) => {
 
   const telo = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${rute.map((r) => `  <url><loc>${new URL(r, koren).href}</loc></url>`).join("\n")}
+${rute.map((r) => `  <url><loc>${new URL(put(r), koren).href}</loc></url>`).join("\n")}
 </urlset>
 `;
 

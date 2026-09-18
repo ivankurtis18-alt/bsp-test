@@ -1,4 +1,5 @@
 ---
+import { put } from "../lib/putanja";
 import "../styles/global.css";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
@@ -37,7 +38,9 @@ const og = await getImage({
 });
 
 const punaAdresa = (put: string) => new URL(put, Astro.site).href;
-const kanonska = punaAdresa(Astro.url.pathname);
+/* Kosa crta na kraju MORA da se poklopi sa mapom sajta. Sa `base`
+   putanjom `Astro.url.pathname` na pocetnoj vraca `/bsp-test` bez nje. */
+const kanonska = punaAdresa(Astro.url.pathname.replace(/\/?$/, "/"));
 
 /* PAŽNJA: između `<!doctype html>` i `<html>` NE SME stajati ništa — ni
    Astro komentar. Kad je tu stajao, Astro je prestao da prepoznaje `<html>`
@@ -62,9 +65,9 @@ const kanonska = punaAdresa(Astro.url.pathname);
     {/* SVG je glavna ikona (oštra na svakoj veličini), PNG je rezerva za
         klijente koji SVG ikone ne podržavaju, a `apple-touch-icon` je
         obavezan da prečica na iOS početnom ekranu ne bude prazan kvadrat. */}
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="icon" href={put("/favicon.svg")} type="image/svg+xml" />
+    <link rel="icon" href={put("/favicon-32.png")} sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href={put("/apple-touch-icon.png")} />
     <meta name="theme-color" content="#0D1B22" />
 
     {
@@ -115,8 +118,8 @@ const kanonska = punaAdresa(Astro.url.pathname);
       (dijakritika) stiže odmah za njima, a `font-display: swap` znači da se
       tekst čita i pre nego što fontovi stignu.
     */}
-    <link rel="preload" href="/fonts/bricolage-latin.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={put("/fonts/bricolage-latin.woff2")} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={put("/fonts/archivo-latin.woff2")} as="font" type="font/woff2" crossorigin />
 
     {/*
       Klijentsko rutiranje. Kartica proizvoda i njegova strana dele

@@ -1,4 +1,5 @@
 ---
+import { put } from "../../lib/putanja";
 import { Image, getImage } from "astro:assets";
 import Layout from "../../layouts/Layout.astro";
 import katalog from "../../../data/proizvodi.json";
@@ -60,7 +61,7 @@ const srodni = proizvodi
   .filter((p) => p.kategorija === proizvod.kategorija && p.slug !== proizvod.slug)
   .slice(0, 4);
 
-const upit = `/kontakt?proizvod=${encodeURIComponent(proizvod.naziv)}`;
+const upit = put(`/kontakt?proizvod=${encodeURIComponent(proizvod.naziv)}`);
 
 /**
  * META OPIS — gradi se, ne lepi.
@@ -179,9 +180,9 @@ const sema = {
           izuzima ciljeve unutar reda teksta, a putanja je rečenica sa
           razdvojnicima. Povećanje bi razbilo red bez dobitka. */}
       <nav class="t-labela-sm putanja" aria-label="Putanja" data-otkrij data-smer="x">
-        <a href="/proizvodi">Proizvodi</a>
+        <a href={put("/proizvodi")}>Proizvodi</a>
         <span aria-hidden="true">/</span>
-        <a href={`/proizvodi#${kategorija?.slug}`}>{kategorija?.naziv}</a>
+        <a href={put(`/proizvodi#${kategorija?.slug}`)}>{kategorija?.naziv}</a>
         {
           podkategorija && (
             <>
@@ -355,7 +356,7 @@ const sema = {
             <h2 class="t-h2" data-otkrij data-maska>
               Iz iste kategorije
             </h2>
-            <a href={`/proizvodi#${kategorija?.slug}`} class="t-labela srodno-veza" data-otkrij>
+            <a href={put(`/proizvodi#${kategorija?.slug}`)} class="t-labela srodno-veza" data-otkrij>
               Sve iz „{kategorija?.naziv}"
             </a>
           </div>
@@ -365,7 +366,7 @@ const sema = {
               const g = glavnaSlika(p.slug);
               return (
                 <li class="kartica" data-otkrij>
-                  <a href={`/proizvodi/${p.slug}`} class="kartica-veza">
+                  <a href={put(`/proizvodi/${p.slug}`)} class="kartica-veza">
                     <div class="kartica-vizual svetlo">
                       {g ? (
                         <Image

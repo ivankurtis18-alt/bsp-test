@@ -1394,6 +1394,37 @@ Merodavna je poslednja kolona: Astro ionako ponovo kodira izvor u WebP za isporu
 
 > **Direktan uvoz slike je pukao build.** `index.astro` je uvozio `961-5--0.png` po imenu (za sekciju „Izbliza"). Obrazac u `slike.ts` je prebačen na `.webp`, ali taj jedan uvoz nije — build je pao sa „Could not resolve". Kad se menja format izvora, traže se **i** obrazac **i** svaki direktan uvoz: `grep -rn "assets/proizvodi/" src/`.
 
+## 5l. Objavljivanje na GitHub Pages (2026-09-18)
+
+Probno izdanje stoji na `https://ivankurtis18-alt.github.io/bsp-test/`. Radi automatski: svaki `push` na `main` pokreće `.github/workflows/deploy.yml`, koji gradi sajt i objavljuje ga.
+
+> **GitHub Pages NE UME da pokrene build.** Servira ono što nađe u repou, a u repou je izvor (`dist/` je namerno van njega). Bez workflow-a Pages prikazuje **404** — ne zato što nešto ne valja, nego zato što `index.html` nastaje tek gradnjom.
+
+### Sajt stoji u PODFOLDERU — i to menja sve unutrašnje adrese
+
+`base: '/bsp-test'` u konfiguraciji. Astro prefiks dodaje **samo** na ono što sam generiše — CSS, JS i slike iz `astro:assets`. **Ručno pisane adrese ostaju netaknute** i vode na koren domena, gde ničega nema.
+
+Izmereno pre ispravke: **22 ručno pisana linka u 9 fajlova**, 6 dinamičkih, 5 putanja ka `public/` i 6 u `fontovi.css`. Bez toga bi na Pages-u nestali navigacija, favicon i fontovi.
+
+Rešenje je `put()` iz `src/lib/putanja.ts` — čita `import.meta.env.BASE_URL`, pa **isti kod radi i u korenu i u podfolderu**. Prelazak na pravi domen je zato samo izmena `astro.config.mjs`: vratiti `site: 'https://bsp.rs'` i obrisati `base`. Ništa drugo.
+
+> **Tri mesta koja regex ne hvata**, a lako se previde:
+> - **navigacija iz niza** (`const veze = [{ href: "/proizvodi" }]`) — nije `href="..."` u markupu;
+> - **adrese građene u frontmatteru** (`const upit = \`/kontakt?...\``);
+> - **klijentske skripte** (`cta.href = ...`) — tamo `import.meta.env.BASE_URL` takođe radi, Vite ga zameni pri gradnji.
+
+> **Fontovi idu RELATIVNOM putanjom.** CSS ne može da čita `BASE_URL`. Pošto se pakuje u `_astro/`, `url("../fonts/x.woff2")` pokazuje na `public/fonts/` i u korenu i u podfolderu. Generator `tools/fontovi.mjs` sada ispisuje relativne putanje — ne vraćati na `/fonts/`.
+
+### Probno izdanje se NE INDEKSIRA
+
+`robots.txt` vraća `Disallow: /` dok domen nije `bsp.rs`. Razlog: probno izdanje je javno dostupan **duplikat** pravog sajta; da ga pretraživač indeksira, `bsp.rs` bi se kasnije takmičio sam sa sobom. Prepoznaje se po domenu, ne po zastavici — da prelazak na pravi domen ne traži izmenu ovog fajla.
+
+### Provereno posle izmene
+
+Sajt posluživan iz `/bsp-test/`: svih 6 strana — **0 grešaka, 0 neuspelih zahteva, 0 puklih slika**, font `Archivo` aktivan, svih 6 fontova sa statusom 200. Navigacija: sve veze nose prefiks, klik na „Proizvodi" vodi na `/bsp-test/proizvodi`. PDF katalog 200. Mapa sajta i kanonske adrese nose `/bsp-test/` i poklapaju se.
+
+> **`public/_headers` na Pages-u ne radi ništa** — to je format Netlify-ja i Cloudflare-a. Bezbednosna zaglavlja i keš politika važe tek kad sajt pređe na takvog domaćina. Fajl ostaje, ne smeta.
+
 ## 6. Pokretanje
 
 ```

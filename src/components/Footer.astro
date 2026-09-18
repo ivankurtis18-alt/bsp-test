@@ -1,4 +1,5 @@
 ---
+import { put } from "../lib/putanja";
 interface Props {
   aktivna?: "pocetna" | "proizvodi" | "katalog" | "o-nama" | "kontakt";
 }
@@ -26,7 +27,7 @@ const prikaziMapu = aktivna === "pocetna";
   <div class="shell">
     <div class="vrh">
       <div class="vrh-tekst">
-        <a href="/" class="znak" aria-label="BSP — početna">BSP</a>
+        <a href={put("/")} class="znak" aria-label="BSP — početna">BSP</a>
         <p class="t-lead recenica">
           Proizvodnja medicinske opreme po meri ustanove. Pančevo, od 1985.
         </p>
@@ -52,11 +53,11 @@ const prikaziMapu = aktivna === "pocetna";
     <div class="mreza">
       <div class="kolona">
         <h2 class="t-labela naslov">Navigacija</h2>
-        <a href="/" class="stavka">Početna</a>
-        <a href="/proizvodi" class="stavka">Proizvodi</a>
-        <a href="/katalog" class="stavka">Katalog</a>
-        <a href="/o-nama" class="stavka">O nama</a>
-        <a href="/kontakt" class="stavka">Kontakt</a>
+        <a href={put("/")} class="stavka">Početna</a>
+        <a href={put("/proizvodi")} class="stavka">Proizvodi</a>
+        <a href={put("/katalog")} class="stavka">Katalog</a>
+        <a href={put("/o-nama")} class="stavka">O nama</a>
+        <a href={put("/kontakt")} class="stavka">Kontakt</a>
       </div>
 
       <div class="kolona">

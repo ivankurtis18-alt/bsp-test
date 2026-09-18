@@ -1,4 +1,5 @@
 ---
+import { put } from "../lib/putanja";
 import Layout from "../layouts/Layout.astro";
 import { Image } from "astro:assets";
 import { godineRada } from "../lib/firma";
@@ -393,7 +394,7 @@ const blokovi = [
       to je cela poruka. */}
   <section class="zavrsni-red">
     <div class="shell">
-      <a href="/proizvodi" class="zavrsna-veza" data-otkrij data-smer="x">
+      <a href={put("/proizvodi")} class="zavrsna-veza" data-otkrij data-smer="x">
         <span class="t-labela zavrsna-labela">Dalje</span>
         <span class="zavrsni-tekst">Pogledajte šta proizvodimo</span>
         <svg class="strelica" width="22" height="12" viewBox="0 0 16 10" fill="none" aria-hidden="true">

@@ -1,4 +1,5 @@
 ---
+import { put } from "../lib/putanja";
 import Layout from "../layouts/Layout.astro";
 import { Image } from "astro:assets";
 import { godineRada, OSNOVANA } from "../lib/firma";
@@ -214,13 +215,13 @@ const koraci = [
             </p>
 
             <div class="akcije" data-hero-akcije>
-              <a href="/proizvodi" class="btn btn-primary">
+              <a href={put("/proizvodi")} class="btn btn-primary">
                 Pogledajte naše proizvode
                 <svg class="strelica" width="16" height="10" viewBox="0 0 16 10" fill="none" aria-hidden="true">
                   <path d="M11 1L15 5L11 9M15 5H0" stroke="currentColor" stroke-width="1.4"></path>
                 </svg>
               </a>
-              <a href="/kontakt" class="btn btn-ghost">Zatražite ponudu</a>
+              <a href={put("/kontakt")} class="btn btn-ghost">Zatražite ponudu</a>
             </div>
           </div>
         </div>
@@ -410,7 +411,7 @@ const koraci = [
               RAL 9016 Bela <span aria-hidden="true">·</span> Svetlo siva
             </p>
 
-            <a href="/kontakt" class="btn btn-ghost" data-boje-cta>
+            <a href={put("/kontakt")} class="btn btn-ghost" data-boje-cta>
               Pošaljite ovu kombinaciju
               <svg class="strelica" width="16" height="10" viewBox="0 0 16 10" fill="none" aria-hidden="true">
                 <path d="M11 1L15 5L11 9M15 5H0" stroke="currentColor" stroke-width="1.4"></path>
@@ -555,7 +556,7 @@ const koraci = [
           od 7 do 15.
         </p>
         <div class="poziv-akcije">
-          <a href="/kontakt" class="btn btn-primary">
+          <a href={put("/kontakt")} class="btn btn-primary">
             Zatražite ponudu
             <svg class="strelica" width="16" height="10" viewBox="0 0 16 10" fill="none" aria-hidden="true">
               <path d="M11 1L15 5L11 9M15 5H0" stroke="currentColor" stroke-width="1.4"></path>
@@ -1736,7 +1737,9 @@ const koraci = [
           ram: ramNaziv,
           tapacirung: tapNaziv,
         });
-        cta.href = `/kontakt?${upit.toString()}`;
+        /* `import.meta.env.BASE_URL` radi i u klijentskoj skripti — Vite ga
+           zameni pri gradnji. Bez njega bi veza vodila na koren domena. */
+        cta.href = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/kontakt?${upit.toString()}`;
       };
 
       document

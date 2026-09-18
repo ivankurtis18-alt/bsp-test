@@ -1,0 +1,51 @@
+# Gradi sajt i objavljuje ga na GitHub Pages posle svakog `push`-a na `main`.
+#
+# GitHub Pages ne ume sam da pokrene build — servira ono što nađe u repou.
+# Pošto je u repou IZVOR (`src/`), a ne izgrađeni sajt (`dist/` je namerno
+# van repoa), bez ovog workflow-a Pages prikazuje 404.
+#
+# Posle prvog pokretanja treba na GitHub-u podesiti:
+#   Settings -> Pages -> Source: "GitHub Actions"
+name: Objavi na GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  # Dozvoljava ručno pokretanje iz kartice Actions.
+  workflow_dispatch:
+
+# Dozvole koje traži `deploy-pages`.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Istovremeno objavljivanje se ne preklapa; tekuće se ne prekida.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  gradnja:
+    name: Gradnja
+    runs-on: ubuntu-latest
+    steps:
+      - name: Preuzmi kod
+        uses: actions/checkout@v4
+
+      - name: Instaliraj, izgradi i pripremi za objavu
+        uses: withastro/action@v3
+        # Podrazumevano: koren repoa, `npm ci` + `npm run build`, izlaz `dist/`.
+        # `package-manager` se prepoznaje iz `package-lock.json`.
+
+  objava:
+    name: Objava
+    needs: gradnja
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.objavljivanje.outputs.page_url }}
+    steps:
+      - name: Objavi na Pages
+        id: objavljivanje
+        uses: actions/deploy-pages@v4
