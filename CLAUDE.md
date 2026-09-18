@@ -1475,10 +1475,20 @@ Izmereno pre ispravke: **22 ručno pisana linka u 9 fajlova**, 6 dinamičkih, 5 
 
 Rešenje je `put()` iz `src/lib/putanja.ts` — čita `import.meta.env.BASE_URL`, pa **isti kod radi i u korenu i u podfolderu**. Prelazak na pravi domen je zato samo izmena `astro.config.mjs`: vratiti `site: 'https://bsp.rs'` i obrisati `base`. Ništa drugo.
 
-> **Tri mesta koja regex ne hvata**, a lako se previde:
+> **Četiri mesta koja regex ne hvata**, a lako se previde:
 > - **navigacija iz niza** (`const veze = [{ href: "/proizvodi" }]`) — nije `href="..."` u markupu;
 > - **adrese građene u frontmatteru** (`const upit = \`/kontakt?...\``);
-> - **klijentske skripte** (`cta.href = ...`) — tamo `import.meta.env.BASE_URL` takođe radi, Vite ga zameni pri gradnji.
+> - **klijentske skripte** (`cta.href = ...`) — tamo `import.meta.env.BASE_URL` takođe radi, Vite ga zameni pri gradnji;
+> - **putanje iz `data/*.json`** — ovo je promaklo i posle prvog prolaza. `data/katalog.json` nosi `"fajl": "/katalog/BSP-katalog.pdf"`, a strana ga je stavljala pravo u `href`. Oba dugmeta na `/katalog` (pregled i preuzimanje) su na Pages-u davala **404**, jer su vodila van podfoldera. Korisnik je to prijavio; nijedna moja provera nije, jer sam gledao markup, a putanja je bila u podacima.
+>
+> **Zato se posle svake izmene putanja radi ovaj prolaz nad `dist/`, ne nad `src/`:**
+>
+> ```bash
+> { grep -roh '\(href\|src\|action\)="/[^"]*"' dist/ ; grep -roh 'url(/[^)]*)' dist/ ; } \
+>   | grep -v 'bsp-test' | sort -u
+> ```
+>
+> Prazan izlaz znači da svaka apsolutna putanja u **isporučenom** sajtu nosi prefiks. Izvor ume da laže — izgrađeni sajt ne.
 
 > **Fontovi idu RELATIVNOM putanjom.** CSS ne može da čita `BASE_URL`. Pošto se pakuje u `_astro/`, `url("../fonts/x.woff2")` pokazuje na `public/fonts/` i u korenu i u podfolderu. Generator `tools/fontovi.mjs` sada ispisuje relativne putanje — ne vraćati na `/fonts/`.
 

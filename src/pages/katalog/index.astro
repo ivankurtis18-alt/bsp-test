@@ -3,6 +3,12 @@ import { put } from "../../lib/putanja";
 import Layout from "../../layouts/Layout.astro";
 import meta from "../../../data/katalog.json";
 
+/* Putanja do PDF-a stoji u `data/katalog.json`, dakle NIJE `href="..."` u
+   markupu — zato ju je promašio prolaz koji je ostalim vezama dodao `put()`.
+   Bez prefiksa je na GitHub Pages vodila na `/katalog/BSP-katalog.pdf`, van
+   podfoldera: oba dugmeta su davala 404. Treće mesto iz spiska zamki u 5l. */
+const pdf = put(meta.fajl);
+
 const mb = (meta.velicinaKB / 1024).toFixed(1).replace(".", ",");
 const datum = new Date(meta.napravljen).toLocaleDateString("sr-RS", {
   day: "numeric",
@@ -39,7 +45,7 @@ const brojke = [
 
         <div class="akcije" data-otkrij>
           <a
-            href={meta.fajl}
+            href={pdf}
             class="btn btn-primary"
             target="_blank"
             rel="noopener"
@@ -52,7 +58,7 @@ const brojke = [
           </a>
 
           <a
-            href={meta.fajl}
+            href={pdf}
             class="btn btn-ghost"
             download="BSP-katalog.pdf"
             data-radnja="preuzimanje"
