@@ -131,12 +131,15 @@ const kategorije = katalog.kategorije.map((k) => ({
     background: color-mix(in oklab, var(--color-sala) 94%, transparent);
   }
 
+  /* Na telefonu je traka bila 76px i gutala nadnaslov heroja: izmereno na
+     320 i 375px, eyebrow je stajao na y=72 — ISPOD zaglavlja. Sada 58px,
+     pa ostaje 14px vazduha. Od 900px naviše ostaje 88px (vidi dole). */
   .traka {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 2rem;
-    height: 76px;
+    height: 58px;
   }
 
   .linija {

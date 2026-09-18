@@ -610,13 +610,80 @@ Sada tri poteza koji su na dodiru **bolji nego na mišu**, ne siromašniji:
 
 | Desktop | Dodir |
 |---|---|
-| koraci — vožnja skrolom (`sticky` + scrub) | **prevlačenje prstom** sa `scroll-snap-type: x mandatory` — nativno, bez JS-a, bez otimanja skrola. Traži `data-lenis-prevent`. |
+| koraci — vožnja skrolom (`sticky` + scrub) | **običan uspravan niz** — vidi „Vodoravna traka je UKLONJENA sa dodira“ ispod. Prevlačenje prstom je probano i odbačeno. |
 | vremenska linija — dijagonala kroz kolone | **progresivno uvlačenje** (0 / 1,5 / 3 / 4,5rem) — isti podatak, sredstvo koje uspravan niz dozvoljava |
 | nosilac grupe — dve kolone | **viši kadar** (4:3 umesto 5:3) — ista uloga, drugo sredstvo |
 
 Naslov heroja: donja granica podignuta sa `2.5rem` na **`3.2rem`** (≈51px na 390px). Na niskim telefonima se steže RAZMAK, a tipografija ne — naslov je primarna izjava i poslednje što ustupa prostor.
 
 **Mereno na pravim uređajima:** 13 mini, iPhone 14, 14 Pro Max, Galaxy S22 i Pixel 7 — hero staje u tačno jedan ekran. **iPhone SE (375×667) prelazi za 123px** i to je svesna odluka: alternativa je plašljiv hero na svim ostalim telefonima.
+
+#### Tri ispravke sa pravog telefona (2026-09-18) — ZAKLJUČANO
+
+Sve tri su stigle od korisnika posle gledanja sajta na telefonu, ne iz merenja. Merenje je služilo da se potvrdi ispravka, ne da je otkrije — to je granica onoga šta Puppeteer vidi.
+
+**1. Zaglavlje je bilo previsoko i jelo je nadnaslov heroja.** `.traka` je imala `height: 76px` na svim širinama. Na 320 i 375px je nadnaslov („BSP · Proizvodnja medicinske opreme") padao ispod donje ivice trake. Sada **58px** ispod 720px.
+
+| Širina | zaglavlje | nadnaslov y | razmak |
+|---|---|---|---|
+| 320 | 59px | 72 | **13px** |
+| 375 | 59px | 73 | **14px** |
+| 390 | 59px | 88 | **29px** |
+| 430 | 59px | 88 | **29px** |
+
+**2. Fotografija heroja je UKLONJENA ispod 1000px.** `.hero-foto { display: none }` — ne prigušena, ne zamenjena drugim kadrom, nego ugašena. Razlog je isti onaj zapisan u „REZOLUCIJA": izvor je 1376×768 i na telefonu se seče na uspravan kadar, pa se od hale vidi presek bez predmeta, a tekst preko njega gubi podlogu. Neutralna `--color-sala` daje ono što fotografija nije mogla:
+
+| | preko fotografije | na neutralnoj podlozi |
+|---|---|---|
+| naslov | 12,12:1 | **16,18:1** |
+| lead | — | 4,90:1 |
+| nadnaslov | — | 4,90:1 |
+
+Na 1000px i naviše fotografija ostaje netaknuta — provereno na 1440: `fotografija=DA`.
+
+**3. Vodoravna traka koraka je UKLONJENA sa dodira.** Bila je dokumentovana kao namerni potez („prevlačenje prstom je bolje nego na mišu"). Korisnikova primedba je oborila obrazloženje: *„niko ne zna da treba da svajpuje levo/desno i onda sekcija izgleda kao da ispada."* **Afordansa koja se ne vidi nije potez nego kvar** — vodoravni skroler bez vidljive ivice se čita kao prelivanje rasporeda, i nijedno merenje to ne prijavljuje jer je tehnički sve ispravno.
+
+Ceo `@media (max-width: 859px)` blok je obrisan, pa važi osnovni `.koraci { display: grid }`:
+
+| Širina | display | kolone | redova | skriveni vodoravni skrol |
+|---|---|---|---|---|
+| 390 | grid | 1 | **4** | 0px |
+| 768 | grid | 2 × 360px | 2 | 0px |
+| 859 | grid | 2 × 405px | 2 | 0px |
+| 860 | flex | traka | 1 | (vozi je transformacija) |
+
+Dve kolone od 720px naviše ostaju — to je tablet, ne telefon: red je dovoljno širok, skrol je uspravan i ništa se ne svajpuje. Taj raspored je i dalje fallback za rad **bez JS-a** na desktopu.
+
+Posledica koja se lako previdi: **`data-lenis-prevent` je time morao da ode iz markupa.** Dok je traka bila skroler na mobilnom, atribut je bio ispravan. Sada nije skroler ni na jednoj širini, a atribut bi blokirao **običan skrol strane** preko cele sekcije — tačno onaj kvar koji je već jednom koštao četiri kruga traženja.
+
+**4. Koraci uzimaju geometriju `.shell`-a dok su mreža.** Korisnik: *„sekcija nije uvučena lepo u ravni sa ostatkom sajta, previše je zalepljena uz ivicu."* Tačno, i merenje je pokazalo koliko: `.pm-scena` je **namerno van `.shell`-a**, jer traka na desktopu mora da teče od ivice do ivice — ali dok je mreža, to znači 0px vazduha tamo gde sve ostalo ima pun razmak.
+
+| Širina | zaglavlje sekcije | koraci (pre) | koraci (posle) |
+|---|---|---|---|
+| 320 / 375 / 390 | 20px | **0px** | 20px |
+| 430 | 22px | **0px** | 22px |
+| 768 | 38px | **0px** | 38px |
+| 859 | 43px | **0px** | 43px |
+
+Pravilo ide na `.pm-scena:not([data-traka-spremna]) .koraci` — ista geometrija kao `.shell` (`max-width: 1560px`, `margin-inline: auto`, isti `padding-inline`). Traku ne dira: ona i dalje počinje na `--pm-uvod`, koji skripta izmeri.
+
+#### Dva kvara koja je ova ispravka otkrila usput
+
+**A. Sekcija je skrolovala stranu vodoravno 796px — na VRHU strane.** Traka je `width: max-content` (2237px u okviru od 1440). Dok je skrol još ne odveze ulevo, viri udesno i cela strana se pomera. Raniji auditi su ovo propustili jer su merili **posle prolaska kroz stranu**, kad je traka već odvezena — „0 prelivanja na 70 kombinacija" je bilo tačno za stanje u kom je mereno, a ne za stanje u kom korisnik stranu zatiče. **Vodoravno prelivanje se meri i na `scrollY = 0`, pre ijednog skrola.** Ispravka: `overflow-x: clip` na `.po-meri`, isto kao na `.hero` i `.izbliza`.
+
+**B. `position: sticky` sa okvira trake je BILO OBRISANO — mojom rukom, istog dana.** Pravilo `.pm-scena[data-traka-spremna] .pm-okvir { position: sticky; top: 24vh }` stajalo je odmah ispod bloka za prevlačenje prstom i otišlo je zajedno s njim. Desktop je time izgubio lepljenje: okvir je kroz celu sekciju klizio linearno (izmereno `top`: 500 → −1028, **0 od 21 uzorka zalepljeno**), pa se cela režija odigravala u prolazu.
+
+> **Niko to nije prijavio, i to je poenta.** Primedba je stigla sa telefona, gde trake ionako više nema — pa je regresija na desktopu mogla da ostane neprimećena do objave. **Posle svakog brisanja CSS bloka proveriti da svaka klasa iz markupa i dalje ima svoje pravilo.** Isti nauk je već zapisan uz vraćanje obojenog heroja; ovo mu je drugi slučaj, pa više nije slučajnost.
+
+Izmereno posle obe ispravke:
+
+| Širina | `position` okvira | zalepljen | pomak trake | prelivanje (vrh / kroz sekciju) |
+|---|---|---|---|---|
+| 320 / 390 | static | — | 0px | 0 / 0 |
+| 768 | static | — | 0px | 0 / 0 |
+| 1024 | **sticky** | 10/21 | 594px | 0 / 0 |
+| 1440 | **sticky** | 11/21 | 797px | 0 / 0 |
+| 1920 | **sticky** | 9/21 | 532px | 0 / 0 |
 
 ### Motion sloj — ZAKLJUČANO
 
@@ -667,12 +734,12 @@ Naslov heroja: donja granica podignuta sa `2.5rem` na **`3.2rem`** (≈51px na 3
 >
 > Lenis proverava **celu putanju** `wheel` događaja i ako bilo koji čvor nosi atribut, **izlazi bez `preventDefault`** (`node_modules/lenis/dist/lenis.mjs`, ~609). A dok je sekcija zalepljena, traka prekriva **ceo ekran**. Posledica: čim pokazivač uđe u tu sekciju, točkić prestaje da ide kroz Lenis i pregledač skroluje **nativno**, u skokovima od oko 100px po zubu — a preko toga stoji `scrub` glačanje od 0,5s. Čita se kao „skroluje u mestu, vrati malo unazad, pa naglo nastavi".
 >
-> Zato skripta sada sama upravlja atributom: `montiraj()` ga **skida** kad upali desktop režim, `razmontiraj()` ga **vraća**. U markupu ostaje, jer je ispravan i za mobilni i za rad bez JS-a.
+> Prva ispravka je bila da skripta sama upravlja atributom (`montiraj()` ga skida, `razmontiraj()` vraća), a u markupu ostaje zbog mobilnog. **Od 2026-09-18 atributa više nema nigde** — ni u markupu ni u `rezija.ts` — jer je vodoravna traka uklonjena sa dodira, pa traka nije skroler ni na jednoj širini. Izmereno posle: `lenis-prevent=false` na 390, 768 i 1440.
 >
 > | | `lenis-prevent` | traka je skroler | `overflow-x` | `scroll-snap` |
 > |---|---|---|---|---|
 > | desktop 1440 | `false` | ne | `visible` | `none` |
-> | mobilni 390 | `true` | **da** | `auto` | `x mandatory` |
+> | mobilni 390 | `false` | ne | `visible` | `none` |
 
 > **Kako se ovakav kvar prepoznaje — dijagnostički obrazac, vredniji od same ispravke.**
 >

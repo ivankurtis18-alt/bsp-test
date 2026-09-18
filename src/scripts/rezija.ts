@@ -346,10 +346,6 @@ function poMeri(cistaci: Array<() => void>) {
     okidac?.scrollTrigger?.kill();
     okidac?.kill();
     okidac = null;
-    /* Traka je opet PRAVI vodoravni skroler (mobilni, prevlačenje prstom),
-       pa Lenis mora da je pusti na miru. Vidi dugačko objašnjenje u
-       `montiraj()`. */
-    traka.setAttribute("data-lenis-prevent", "");
     scena.removeAttribute("data-traka-spremna");
     scena.style.height = "";
     traka.style.removeProperty("--pm-uvod");

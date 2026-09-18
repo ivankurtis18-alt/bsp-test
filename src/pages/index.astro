@@ -519,14 +519,14 @@ const koraci = [
           <span class="pm-napredak" data-pm-napredak aria-hidden="true"></span>
         </div>
 
-        {/* `data-lenis-prevent` stoji ovde zbog MOBILNOG (i rada bez JS-a),
-            gde je traka stvaran vodoravni skroler. Na desktopu ga skripta
-            SKIDA, jer tamo traku vozi transformacija a element prekriva ceo
-            ekran — vidi `poMeri()` u `rezija.ts`. Ne pretvarati u trajan
-            atribut i ne uklanjati odavde. */}
-        {/* `data-lenis-prevent`: bez toga Lenis otima vodoravno prevlačenje
-            unutrašnjeg skrolera i traka se ne pomera prstom. */}
-        <ol class="koraci" data-pm-traka data-lenis-prevent>
+        {/* Traka VIŠE NIJE SKROLER ni na jednom ekranu: na desktopu je vozi
+            transformacija, na telefonu koraci stoje jedan ispod drugog.
+
+            Zato nema `data-lenis-prevent`. Taj atribut govori Lenisu da se
+            skloni dok je pokazivač nad elementom — a kad element ne skroluje
+            ništa, to samo blokira normalan skrol strane preko cele sekcije.
+            Isti kvar smo već jednom lovili. */}
+        <ol class="koraci" data-pm-traka>
           {
             koraci.map((k) => (
               <li class="korak">
@@ -858,17 +858,21 @@ const koraci = [
     .hero-scena > * {
       grid-area: auto;
     }
-    /* Na uskom ekranu fotografija ostaje preko celog ekrana, ali se veo
-       okreće: odozdo naviše umesto s leva, jer tekst tu stoji ISPOD naslova
-       preko cele širine, a ne u levoj koloni. */
-    .hero-veo {
-      background: radial-gradient(
-        ellipse 140% 78% at 50% 112%,
-        var(--color-sala) 0%,
-        color-mix(in oklab, var(--color-sala) 84%, transparent) 38%,
-        color-mix(in oklab, var(--color-sala) 40%, transparent) 62%,
-        transparent 84%
-      );
+    /* NA TELEFONU NEMA FOTOGRAFIJE.
+
+       Fotografija hale je snimljena za širok kadar: na uskom ekranu se od
+       nje vidi isečak u kom naslov i tekst padaju preko opreme i prozora,
+       pa se teško čitaju. Veo je to ublažavao, ali nije rešavao — slika
+       tu ionako ne prenosi ono zbog čega postoji.
+
+       Zato ispod 1000px hero stoji na mirnoj podlozi sajta. Tipografija
+       time dobija pun kontrast, a fotografija ostaje tamo gde radi — na
+       širokom ekranu.
+
+       Odluka korisnika posle gledanja na telefonu (2026-09-18). NE vraćati
+       bez istog takvog provere na uređaju. */
+    .hero-foto {
+      display: none;
     }
 
     .hero-sadrzaj {
@@ -1374,6 +1378,15 @@ const koraci = [
   /* ── Vodoravna traka koraka ───────────────────────────────────────────
      Podrazumevano je obična mreža — to je i stanje bez JS-a. Vodoravni
      raspored pali skripta tek pošto izmeri koliko traka viri. */
+  /* Traka je `width: max-content` — na 1440 je široka 2237px u okviru od
+     1440. Dok je skrol još ne odveze ulevo (a to je tačno stanje na VRHU
+     strane), ona viri 796px udesno i cela strana se skroluje vodoravno.
+     `clip`, ne `hidden`: ne pravi scroll kontejner, pa lepljivi `.pm-okvir`
+     unutra nastavlja da radi. Isto pravilo već stoji na `.hero` i `.izbliza`. */
+  .po-meri {
+    overflow-x: clip;
+  }
+
   .pm-scena {
     position: relative;
     margin-top: clamp(2.5rem, 5vw, 4rem);
@@ -1399,40 +1412,45 @@ const koraci = [
     display: none;
   }
 
-  /* ── NA DODIR: traka se prevlači prstom ───────────────────────────────
-     Ispod 860px skrol-vožnja je isključena (vidi rezija.ts). Ranije je tu
-     ostajala obična mreža — mobilni je time gubio potez koji desktop ima.
+  /* ── NA DODIR: KORACI IDU JEDAN ISPOD DRUGOG ──────────────────────────
 
-     Prevlačenje prstom nije siromašnija zamena nego BOLJI potez na dodiru:
-     nativno je, bez JS-a, bez skrol-otimanja, i `scroll-snap` zaustavlja
-     tačno na koraku. Desktop dobija vožnju skrolom, dodir dobija prevlačenje
-     — dva različita ulaza, isti sadržaj. */
-  @media (max-width: 859px) {
-    .koraci {
-      display: flex;
-      gap: 1rem;
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
-      /* Prvi i poslednji korak se poravnavaju sa ivicom sadržaja. */
-      scroll-padding-inline: 0;
-      padding-bottom: 0.75rem;
-      scrollbar-width: none;
-      /* Lenis mora da pusti ovaj skroler — bez toga otima prevlačenje. */
-      overscroll-behavior-x: contain;
-    }
+     Ovde je ranije stajala vodoravna traka koja se prevlači prstom, sa
+     `scroll-snap`-om. Na papiru bolji potez od obične mreže; u rukama —
+     nije. Korisnik je na telefonu prijavio: „niko ne zna da treba da
+     svajpuje levo/desno, i onda sekcija izgleda kao da ispada."
 
-    .koraci::-webkit-scrollbar {
-      display: none;
-    }
+     To je tačno ono što skriveni vodoravni skrol i radi: nema nikakvog
+     znaka da se sadržaj nastavlja u stranu, pa se vidi pola kartice i
+     deluje kao greška u rasporedu.
 
-    .korak {
-      flex: none;
-      width: min(78vw, 20rem);
-      scroll-snap-align: start;
-    }
+     Ispod 860px sada važi osnovni raspored iz `.koraci` — mreža, jedan
+     korak ispod drugog, običan uspravni skrol. Vožnja skrolom ostaje na
+     desktopu, gde ima i mesta i pokazivača koji je otkriva.
+
+     NE vraćati prevlačenje bez provere na stvarnom uređaju. */
+
+
+  /* Traka je NAMERNO van `.shell`-a — na desktopu mora da teče od ivice do
+     ivice. Ali dok je mreža, to znači da koraci stoje zalepljeni uz ivicu
+     ekrana dok svaka druga sekcija ima 20px vazduha. Izmereno na 320–768px:
+     `.pm-zaglavlje` na 20, koraci na 0 — sekcija ispada iz vertikale strane.
+     Zato mreža uzima geometriju `.shell`-a, a traka je ne dira. */
+  .pm-scena:not([data-traka-spremna]) .koraci {
+    max-width: 1560px;
+    margin-inline: auto;
+    padding-inline: clamp(1.25rem, 5vw, 5rem);
   }
 
-  /* Traka je aktivna: okvir se lepi, a koraci stoje u jednom redu. */
+  /* Traka je aktivna: okvir se lepi, a koraci stoje u jednom redu.
+
+     OVO PRAVILO JE JEDNOM VEĆ IZGUBLJENO. Stajalo je odmah ispod bloka za
+     prevlačenje prstom i otišlo je zajedno s njim kad je taj blok obrisan
+     (2026-09-18) — desktop je ostao bez lepljenja, a niko to nije prijavio
+     jer je primedba stigla sa telefona, gde trake ionako više nema.
+     Uhvaćeno tek merenjem: `getComputedStyle(okvir).position` je vraćao
+     `static`, a okvir je kroz celu sekciju klizio linearno (500 → −1028).
+     Posle svakog brisanja CSS bloka proveriti da svaka klasa iz markupa i
+     dalje ima svoje pravilo — isti nauk kao kod vraćanja obojenog heroja. */
   .pm-scena[data-traka-spremna] .pm-okvir {
     position: sticky;
     top: 24vh;
